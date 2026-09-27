@@ -1,0 +1,212 @@
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SectionList,
+  ActivityIndicator,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar,
+} from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { useTheme } from '../../hooks/useTheme';
+import { useNotificationPermission } from '../../hooks/useNotificationPermission';
+import { useNotifications } from '../../hooks/useNotifications';
+import { Header } from '../../components/Header';
+import { SearchBar } from '../../components/SearchBar';
+import { FilterBar } from '../../components/FilterBar';
+import { NotificationCard } from '../../components/NotificationCard';
+import { NotificationDetailModal } from '../../components/NotificationDetailModal';
+import { EmptyState } from '../../components/EmptyState';
+import { PermissionBanner } from '../../components/PermissionBanner';
+import { DateFilter, NotificationItem } from '../../types/notification';
+import { groupNotificationsByDate } from '../../utils/date';
+
+export default function ArchiveScreen() {
+  const { colors, isDark } = useTheme();
+  const params = useLocalSearchParams<{ package?: string; appName?: string }>();
+
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [activeApp, setActiveApp] = useState<{ packageName: string; appName: string } | null>(
+    params.package && params.appName
+      ? { packageName: params.package, appName: params.appName }
+      : null
+  );
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedItem, setSelectedItem] = useState<NotificationItem | null>(null);
+
+  const {
+    isGranted,
+    isSyncing,
+    requestPermission,
+    syncActiveNotifications,
+  } = useNotificationPermission();
+
+  const {
+    notifications,
+    isLoading,
+    isRefreshing,
+    hasMore,
+    refresh,
+    loadMore,
+    deleteItem,
+    toggleRead,
+    markAllAsRead,
+  } = useNotifications({
+    filter: dateFilter,
+    packageName: activeApp?.packageName,
+    searchQuery,
+  });
+
+  const sections = useMemo(() => {
+    return groupNotificationsByDate(notifications);
+  }, [notifications]);
+
+  const unreadCount = useMemo(() => {
+    return notifications.filter((n) => n.is_read === 0).length;
+  }, [notifications]);
+
+  const handleCardPress = (item: NotificationItem) => {
+    setSelectedItem(item);
+    if (item.is_read === 0) {
+      toggleRead(item.notification_key, false);
+    }
+  };
+
+  const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (
+    <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+      <Text style={[styles.sectionHeaderText, { color: colors.textMuted }]}>{title}</Text>
+    </View>
+  );
+
+  const renderEmptyComponent = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      );
+    }
+
+    if (isGranted === false && notifications.length === 0) {
+      return (
+        <EmptyState
+          type="no-permission"
+          onPressAction={requestPermission}
+        />
+      );
+    }
+
+    if (searchQuery.trim().length > 0) {
+      return <EmptyState type="no-search-results" />;
+    }
+
+    return <EmptyState type="no-notifications" />;
+  };
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+
+      <Header
+        isPermissionGranted={isGranted}
+        onPressPermissionStatus={requestPermission}
+        onPressRefresh={syncActiveNotifications}
+        onPressMarkAllRead={unreadCount > 0 ? markAllAsRead : undefined}
+        isSyncing={isSyncing}
+        unreadCount={unreadCount}
+      />
+
+      {isGranted === false && (
+        <PermissionBanner onEnablePress={requestPermission} />
+      )}
+
+      <SearchBar
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="Search app, title, or message..."
+      />
+
+      <FilterBar
+        selectedFilter={dateFilter}
+        onSelectFilter={setDateFilter}
+        activeAppFilter={activeApp}
+        onClearAppFilter={() => setActiveApp(null)}
+        unreadCount={unreadCount}
+      />
+
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.notification_key}
+        renderItem={({ item }) => (
+          <NotificationCard
+            item={item}
+            onPress={handleCardPress}
+            onToggleRead={toggleRead}
+            onDelete={deleteItem}
+          />
+        )}
+        renderSectionHeader={renderSectionHeader}
+        ListEmptyComponent={renderEmptyComponent}
+        contentContainerStyle={styles.listContent}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.4}
+        stickySectionHeadersEnabled={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        ListFooterComponent={
+          hasMore && notifications.length > 0 ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null
+        }
+      />
+
+      <NotificationDetailModal
+        item={selectedItem}
+        visible={selectedItem !== null}
+        onClose={() => setSelectedItem(null)}
+        onToggleRead={toggleRead}
+        onDelete={deleteItem}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  listContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+  },
+  sectionHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  footerLoader: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+});
