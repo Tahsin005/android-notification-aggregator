@@ -17,6 +17,26 @@ export async function openApp(packageName: string): Promise<boolean> {
   return await NotificationListenerModule.openApp(packageName);
 }
 
+export async function markAsRead(notificationKey: string): Promise<boolean> {
+  return await NotificationListenerModule.markAsRead(notificationKey);
+}
+
+export async function markAsUnread(notificationKey: string): Promise<boolean> {
+  return await NotificationListenerModule.markAsUnread(notificationKey);
+}
+
+export async function markAllAsRead(): Promise<boolean> {
+  return await NotificationListenerModule.markAllAsRead();
+}
+
+export async function deleteNotification(notificationKey: string): Promise<boolean> {
+  return await NotificationListenerModule.deleteNotification(notificationKey);
+}
+
+export async function clearAllNotifications(): Promise<boolean> {
+  return await NotificationListenerModule.clearAllNotifications();
+}
+
 export function addNotificationPostedListener(
   listener: (notification: NativeNotificationItem) => void
 ) {

@@ -6,9 +6,9 @@ import {
   SectionList,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import { useNotificationPermission } from '../../hooks/useNotificationPermission';
@@ -68,7 +68,7 @@ export default function ArchiveScreen() {
   }, [notifications]);
 
   const handleCardPress = (item: NotificationItem) => {
-    setSelectedItem(item);
+    setSelectedItem(item.is_read === 0 ? { ...item, is_read: 1 } : item);
     if (item.is_read === 0) {
       toggleRead(item.notification_key, false);
     }
@@ -106,7 +106,7 @@ export default function ArchiveScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       <Header

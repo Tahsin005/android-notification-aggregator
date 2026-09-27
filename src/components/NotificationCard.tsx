@@ -16,6 +16,8 @@ interface NotificationCardProps {
 export const NotificationCard: React.FC<NotificationCardProps> = ({
   item,
   onPress,
+  onToggleRead,
+  onDelete,
 }) => {
   const { colors } = useTheme();
   const appColor = getAppColor(item.package_name);
@@ -48,7 +50,30 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
           <Text style={[styles.timeText, { color: colors.textMuted }]}>
             {formatRelativeTime(item.timestamp)}
           </Text>
-          {isUnread && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}
+          {onToggleRead && (
+            <TouchableOpacity
+              onPress={() => onToggleRead(item.notification_key, !isUnread)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.actionIconBtn}
+              accessibilityLabel={isUnread ? 'Mark as read' : 'Mark as unread'}
+            >
+              <Ionicons
+                name={isUnread ? 'mail-unread' : 'mail-outline'}
+                size={16}
+                color={isUnread ? colors.primary : colors.textMuted}
+              />
+            </TouchableOpacity>
+          )}
+          {onDelete && (
+            <TouchableOpacity
+              onPress={() => onDelete(item.notification_key)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.actionIconBtn}
+              accessibilityLabel="Delete notification"
+            >
+              <Ionicons name="trash-outline" size={15} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -148,6 +173,12 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
+  },
+  actionIconBtn: {
+    padding: 4,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   unreadDot: {
     width: 7,

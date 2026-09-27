@@ -34,19 +34,27 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
 }) => {
   const { colors } = useTheme();
   const [isOpeningApp, setIsOpeningApp] = useState(false);
+  const [prevItemKey, setPrevItemKey] = useState<string | null>(null);
+  const [readOverride, setReadOverride] = useState<boolean | null>(null);
+
+  if (item && item.notification_key !== prevItemKey) {
+    setPrevItemKey(item.notification_key);
+    setReadOverride(null);
+  }
+
+  const isRead = readOverride !== null ? readOverride : (item ? item.is_read === 1 : false);
 
   if (!item) return null;
 
   const appColor = getAppColor(item.package_name);
   const initials = getAppInitials(item.app_name);
-  const isRead = item.is_read === 1;
 
   const handleOpenApp = async () => {
     setIsOpeningApp(true);
     try {
       const opened = await launchApp(item.package_name);
       if (!opened) {
-        const msg = `Unable to open ${item.app_name}. The app may not have a standard launcher activity.`;
+        const msg = `Unable to open ${item.app_name || item.package_name}. Please verify the app is installed.`;
         if (Platform.OS === 'android') {
           ToastAndroid.show(msg, ToastAndroid.LONG);
         } else {
@@ -75,8 +83,9 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
   };
 
   const handleToggleRead = () => {
-    onToggleRead(item.notification_key, isRead);
-    onClose();
+    const wasRead = isRead;
+    setReadOverride(!wasRead);
+    onToggleRead(item.notification_key, wasRead);
   };
 
   return (

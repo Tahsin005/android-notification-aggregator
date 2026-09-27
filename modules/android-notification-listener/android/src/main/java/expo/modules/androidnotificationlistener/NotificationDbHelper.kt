@@ -45,7 +45,12 @@ object NotificationDbHelper {
         }
         val dbFile = File(sqliteDir, DB_NAME)
         val db = SQLiteDatabase.openOrCreateDatabase(dbFile.path, null)
-        db.rawQuery("PRAGMA journal_mode = WAL;", null).close()
+        try {
+          db.enableWriteAheadLogging()
+          db.execSQL("PRAGMA busy_timeout = 5000;")
+        } catch (e: Exception) {
+          Log.w(TAG, "Could not set WAL or busy_timeout on DB: ${e.message}")
+        }
         createTablesIfNotExist(db)
         dbInstance = db
         db
@@ -112,27 +117,31 @@ object NotificationDbHelper {
       """.trimIndent()
 
       val statement = db.compileStatement(sql)
-      statement.bindString(1, data.notificationKey)
-      statement.bindString(2, data.packageName)
-      statement.bindString(3, data.appName)
+      try {
+        statement.bindString(1, data.notificationKey)
+        statement.bindString(2, data.packageName)
+        statement.bindString(3, data.appName)
 
-      if (data.title != null) statement.bindString(4, data.title) else statement.bindNull(4)
-      if (data.text != null) statement.bindString(5, data.text) else statement.bindNull(5)
-      if (data.bigText != null) statement.bindString(6, data.bigText) else statement.bindNull(6)
-      if (data.subText != null) statement.bindString(7, data.subText) else statement.bindNull(7)
+        if (data.title != null) statement.bindString(4, data.title) else statement.bindNull(4)
+        if (data.text != null) statement.bindString(5, data.text) else statement.bindNull(5)
+        if (data.bigText != null) statement.bindString(6, data.bigText) else statement.bindNull(6)
+        if (data.subText != null) statement.bindString(7, data.subText) else statement.bindNull(7)
 
-      statement.bindLong(8, data.timestamp)
+        statement.bindLong(8, data.timestamp)
 
-      if (data.category != null) statement.bindString(9, data.category) else statement.bindNull(9)
-      if (data.groupKey != null) statement.bindString(10, data.groupKey) else statement.bindNull(10)
-      if (data.channelId != null) statement.bindString(11, data.channelId) else statement.bindNull(11)
+        if (data.category != null) statement.bindString(9, data.category) else statement.bindNull(9)
+        if (data.groupKey != null) statement.bindString(10, data.groupKey) else statement.bindNull(10)
+        if (data.channelId != null) statement.bindString(11, data.channelId) else statement.bindNull(11)
 
-      statement.bindLong(12, if (data.isOngoing) 1L else 0L)
-      statement.bindLong(13, if (data.isClearable) 1L else 0L)
-      statement.bindLong(14, data.createdAt.takeIf { it > 0 } ?: now)
+        statement.bindLong(12, if (data.isOngoing) 1L else 0L)
+        statement.bindLong(13, if (data.isClearable) 1L else 0L)
+        statement.bindLong(14, data.createdAt.takeIf { it > 0 } ?: now)
 
-      statement.execute()
-      true
+        statement.execute()
+        true
+      } finally {
+        statement.close()
+      }
     } catch (e: Exception) {
       Log.e(TAG, "Failed to insert or update notification: ${e.message}")
       false
@@ -148,6 +157,65 @@ object NotificationDbHelper {
       db.update(TABLE_NAME, values, "notification_key = ?", arrayOf(notificationKey)) > 0
     } catch (e: Exception) {
       Log.e(TAG, "Failed to mark notification as removed: ${e.message}")
+      false
+    }
+  }
+
+  fun markAsRead(context: Context, notificationKey: String): Boolean {
+    val db = getDatabase(context) ?: return false
+    return try {
+      val values = ContentValues().apply {
+        put("is_read", 1)
+      }
+      db.update(TABLE_NAME, values, "notification_key = ?", arrayOf(notificationKey)) >= 0
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to mark notification as read: ${e.message}")
+      false
+    }
+  }
+
+  fun markAsUnread(context: Context, notificationKey: String): Boolean {
+    val db = getDatabase(context) ?: return false
+    return try {
+      val values = ContentValues().apply {
+        put("is_read", 0)
+      }
+      db.update(TABLE_NAME, values, "notification_key = ?", arrayOf(notificationKey)) >= 0
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to mark notification as unread: ${e.message}")
+      false
+    }
+  }
+
+  fun markAllAsRead(context: Context): Boolean {
+    val db = getDatabase(context) ?: return false
+    return try {
+      val values = ContentValues().apply {
+        put("is_read", 1)
+      }
+      db.update(TABLE_NAME, values, "is_read = 0", null) >= 0
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to mark all notifications as read: ${e.message}")
+      false
+    }
+  }
+
+  fun deleteNotification(context: Context, notificationKey: String): Boolean {
+    val db = getDatabase(context) ?: return false
+    return try {
+      db.delete(TABLE_NAME, "notification_key = ?", arrayOf(notificationKey)) >= 0
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to delete notification: ${e.message}")
+      false
+    }
+  }
+
+  fun clearAllNotifications(context: Context): Boolean {
+    val db = getDatabase(context) ?: return false
+    return try {
+      db.delete(TABLE_NAME, null, null) >= 0
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to clear all notifications: ${e.message}")
       false
     }
   }

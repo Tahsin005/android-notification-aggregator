@@ -183,18 +183,66 @@ class NotificationListenerModule : Module() {
     AsyncFunction("openApp") { packageName: String ->
       try {
         val ctx = context
-        val launchIntent = ctx.packageManager.getLaunchIntentForPackage(packageName)
+        val pm = ctx.packageManager
+
+        // 1. Try standard getLaunchIntentForPackage
+        val launchIntent = pm.getLaunchIntentForPackage(packageName)
         if (launchIntent != null) {
-          launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+          launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
           ctx.startActivity(launchIntent)
-          true
-        } else {
-          false
+          return@AsyncFunction true
         }
+
+        // 2. Query for Intent.ACTION_MAIN with CATEGORY_LAUNCHER
+        val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
+          addCategory(Intent.CATEGORY_LAUNCHER)
+          `package` = packageName
+        }
+        val resolveInfos = pm.queryIntentActivities(mainIntent, 0)
+        if (resolveInfos.isNotEmpty()) {
+          val activity = resolveInfos[0].activityInfo
+          val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+            component = ComponentName(activity.packageName, activity.name)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+          }
+          ctx.startActivity(intent)
+          return@AsyncFunction true
+        }
+
+        // 3. Try Leanback launcher intent (Android TV / alternative launcher)
+        val leanbackIntent = pm.getLeanbackLaunchIntentForPackage(packageName)
+        if (leanbackIntent != null) {
+          leanbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+          ctx.startActivity(leanbackIntent)
+          return@AsyncFunction true
+        }
+
+        false
       } catch (e: Exception) {
         Log.e(TAG, "Failed to open app $packageName: ${e.message}")
         false
       }
+    }
+
+    AsyncFunction("markAsRead") { notificationKey: String ->
+      NotificationDbHelper.markAsRead(context, notificationKey)
+    }
+
+    AsyncFunction("markAsUnread") { notificationKey: String ->
+      NotificationDbHelper.markAsUnread(context, notificationKey)
+    }
+
+    AsyncFunction("markAllAsRead") {
+      NotificationDbHelper.markAllAsRead(context)
+    }
+
+    AsyncFunction("deleteNotification") { notificationKey: String ->
+      NotificationDbHelper.deleteNotification(context, notificationKey)
+    }
+
+    AsyncFunction("clearAllNotifications") {
+      NotificationDbHelper.clearAllNotifications(context)
     }
   }
 }

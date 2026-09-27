@@ -16,6 +16,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
     const db = await SQLite.openDatabaseAsync('notifications.db');
 
     await db.execAsync(`
+      PRAGMA busy_timeout = 5000;
       PRAGMA journal_mode = WAL;
 
       CREATE TABLE IF NOT EXISTS notifications (

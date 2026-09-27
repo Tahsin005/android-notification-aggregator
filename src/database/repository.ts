@@ -1,4 +1,5 @@
 import { getDatabase } from './db';
+import * as NativeListener from '@/modules/android-notification-listener';
 import {
   NotificationItem,
   NotificationQueryParams,
@@ -153,32 +154,97 @@ export async function getUnreadCount(): Promise<number> {
 }
 
 export async function markAsRead(notificationKey: string): Promise<void> {
-  const db = await getDatabase();
-  await db.runAsync(`UPDATE notifications SET is_read = 1 WHERE notification_key = ?;`, [
-    notificationKey,
-  ]);
+  try {
+    if (NativeListener.markAsRead) {
+      await NativeListener.markAsRead(notificationKey);
+    }
+  } catch (e) {
+    console.warn('Native markAsRead error:', e);
+  }
+
+  try {
+    const db = await getDatabase();
+    await db.runAsync(`UPDATE notifications SET is_read = 1 WHERE notification_key = ?;`, [
+      notificationKey,
+    ]);
+  } catch (e) {
+    console.warn('expo-sqlite markAsRead error:', e);
+  }
 }
 
 export async function markAsUnread(notificationKey: string): Promise<void> {
-  const db = await getDatabase();
-  await db.runAsync(`UPDATE notifications SET is_read = 0 WHERE notification_key = ?;`, [
-    notificationKey,
-  ]);
+  try {
+    if (NativeListener.markAsUnread) {
+      await NativeListener.markAsUnread(notificationKey);
+    }
+  } catch (e) {
+    console.warn('Native markAsUnread error:', e);
+  }
+
+  try {
+    const db = await getDatabase();
+    await db.runAsync(`UPDATE notifications SET is_read = 0 WHERE notification_key = ?;`, [
+      notificationKey,
+    ]);
+  } catch (e) {
+    console.warn('expo-sqlite markAsUnread error:', e);
+  }
 }
 
 export async function markAllAsRead(): Promise<void> {
-  const db = await getDatabase();
-  await db.runAsync(`UPDATE notifications SET is_read = 1 WHERE is_read = 0;`);
+  try {
+    if (NativeListener.markAllAsRead) {
+      await NativeListener.markAllAsRead();
+    }
+  } catch (e) {
+    console.warn('Native markAllAsRead error:', e);
+  }
+
+  try {
+    const db = await getDatabase();
+    await db.execAsync(`UPDATE notifications SET is_read = 1 WHERE is_read = 0;`);
+  } catch (e) {
+    console.warn('expo-sqlite markAllAsRead error:', e);
+  }
 }
 
 export async function deleteNotification(notificationKey: string): Promise<void> {
-  const db = await getDatabase();
-  await db.runAsync(`DELETE FROM notifications WHERE notification_key = ?;`, [notificationKey]);
+  try {
+    if (NativeListener.deleteNotification) {
+      await NativeListener.deleteNotification(notificationKey);
+    }
+  } catch (e) {
+    console.warn('Native deleteNotification error:', e);
+  }
+
+  try {
+    const db = await getDatabase();
+    await db.runAsync(`DELETE FROM notifications WHERE notification_key = ?;`, [notificationKey]);
+  } catch (e) {
+    console.warn('expo-sqlite deleteNotification error:', e);
+  }
 }
 
 export async function clearNotifications(): Promise<void> {
-  const db = await getDatabase();
-  await db.runAsync(`DELETE FROM notifications;`);
+  let nativeSuccess = false;
+  try {
+    if (NativeListener.clearAllNotifications) {
+      nativeSuccess = await NativeListener.clearAllNotifications();
+    }
+  } catch (e) {
+    console.warn('Native clearAllNotifications error:', e);
+  }
+
+  try {
+    const db = await getDatabase();
+    await db.execAsync(`DELETE FROM notifications;`);
+  } catch (e) {
+    console.warn('expo-sqlite clearNotifications error:', e);
+    // If native cleared successfully, do not re-throw error
+    if (!nativeSuccess) {
+      throw e;
+    }
+  }
 }
 
 export async function deleteExpiredNotifications(retention: RetentionPeriod): Promise<number> {

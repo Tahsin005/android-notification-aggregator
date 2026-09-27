@@ -154,36 +154,48 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
   }, [packageName]);
 
   const deleteItem = useCallback(async (notificationKey: string) => {
-    await deleteNotification(notificationKey);
     setNotifications((prev) => prev.filter((n) => n.notification_key !== notificationKey));
+    try {
+      await deleteNotification(notificationKey);
+    } catch (e) {
+      console.warn('Error deleting notification from DB:', e);
+    }
   }, []);
 
   const toggleRead = useCallback(async (notificationKey: string, currentlyRead: boolean) => {
-    if (currentlyRead) {
-      await markAsUnread(notificationKey);
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.notification_key === notificationKey ? { ...n, is_read: 0 } : n
-        )
-      );
-    } else {
-      await markAsRead(notificationKey);
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.notification_key === notificationKey ? { ...n, is_read: 1 } : n
-        )
-      );
+    const nextReadState = currentlyRead ? 0 : 1;
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.notification_key === notificationKey ? { ...n, is_read: nextReadState } : n
+      )
+    );
+    try {
+      if (currentlyRead) {
+        await markAsUnread(notificationKey);
+      } else {
+        await markAsRead(notificationKey);
+      }
+    } catch (e) {
+      console.warn('Error updating read status in DB:', e);
     }
   }, []);
 
   const markAll = useCallback(async () => {
-    await markAllAsRead();
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
+    try {
+      await markAllAsRead();
+    } catch (e) {
+      console.warn('Error marking all as read in DB:', e);
+    }
   }, []);
 
   const clearAll = useCallback(async () => {
-    await clearNotifications();
     setNotifications([]);
+    try {
+      await clearNotifications();
+    } catch (e) {
+      console.warn('Error clearing all notifications from DB:', e);
+    }
   }, []);
 
   return {
