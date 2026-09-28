@@ -13,6 +13,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useTheme } from '../../hooks/useTheme';
 import { useNotificationPermission } from '../../hooks/useNotificationPermission';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useDnd } from '../../hooks/useDnd';
 import { Header } from '../../components/Header';
 import { SearchBar } from '../../components/SearchBar';
 import { FilterBar } from '../../components/FilterBar';
@@ -27,6 +28,7 @@ import { groupNotificationsByDate } from '../../utils/date';
 export default function ArchiveScreen() {
   const { colors, isDark } = useTheme();
   const params = useLocalSearchParams<{ package?: string; appName?: string }>();
+  const { isDnd, toggleDnd } = useDnd();
 
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [activeApp, setActiveApp] = useState<{ packageName: string; appName: string } | null>(
@@ -115,6 +117,8 @@ export default function ArchiveScreen() {
         onPressMarkAllRead={unreadCount > 0 ? markAllAsRead : undefined}
         isSyncing={isSyncing}
         unreadCount={unreadCount}
+        isDnd={isDnd}
+        onToggleDnd={toggleDnd}
       />
 
       {isGranted === false && (

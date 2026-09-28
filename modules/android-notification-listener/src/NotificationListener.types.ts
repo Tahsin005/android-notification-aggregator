@@ -13,6 +13,7 @@ export interface NativeNotificationItem {
   isOngoing: boolean;
   isClearable: boolean;
   isRead: boolean;
+  interceptedInDnd?: number;
   removedAt: number | null;
   createdAt: number;
 }

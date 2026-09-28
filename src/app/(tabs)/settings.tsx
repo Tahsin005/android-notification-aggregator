@@ -7,6 +7,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -14,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AmbientBackground } from '../../components/AmbientBackground';
 import { clearNotifications, getNotificationStats } from '../../database/repository';
+import { useDnd } from '../../hooks/useDnd';
 import { useNotificationPermission } from '../../hooks/useNotificationPermission';
 import { useTheme } from '../../hooks/useTheme';
 import { notificationEvents } from '../../services/notificationEvents';
@@ -29,6 +31,7 @@ const RETENTION_OPTIONS: { key: RetentionPeriod; label: string; description: str
 export default function SettingsScreen() {
   const { colors, isDark } = useTheme();
   const { isGranted, requestPermission } = useNotificationPermission();
+  const { isDnd, dndMode, blockedPackages, toggleDnd, setDndMode } = useDnd();
 
   const [retention, setRetention] = useState<RetentionPeriod>('forever');
   const [stats, setStats] = useState<NotificationStats | null>(null);
@@ -170,6 +173,78 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textDim }]}>DO NOT DISTURB & VAULT INTERCEPTION</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: isDnd ? 'rgba(250, 204, 21, 0.35)' : colors.cardBorder, borderTopColor: isDnd ? 'rgba(250, 204, 21, 0.60)' : colors.cardBorderTop }]}>
+            <View style={styles.dndHeaderRow}>
+              <View style={[styles.dndIconBox, { backgroundColor: isDnd ? 'rgba(250, 204, 21, 0.16)' : 'rgba(255, 255, 255, 0.05)', borderColor: isDnd ? 'rgba(250, 204, 21, 0.35)' : 'rgba(255, 255, 255, 0.10)' }]}>
+                <Ionicons name={isDnd ? 'moon' : 'moon-outline'} size={22} color={isDnd ? colors.primary : colors.textMuted} />
+              </View>
+              <View style={styles.dndTextContainer}>
+                <Text style={[styles.statusTitle, { color: colors.text }]}>Quiet Vault Mode</Text>
+                <Text style={[styles.statusSubtitle, { color: colors.textMuted }]}>
+                  {isDnd
+                    ? 'Active: Incoming notifications are vaulted here and auto-dismissed from your status bar'
+                    : 'Disabled: Notifications remain visible in your Android notification shade'}
+                </Text>
+              </View>
+              <Switch
+                value={isDnd}
+                onValueChange={toggleDnd}
+                trackColor={{ false: 'rgba(255, 255, 255, 0.12)', true: colors.primary }}
+                thumbColor={isDnd ? '#070A10' : '#888'}
+              />
+            </View>
+
+            {isDnd && (
+              <View style={styles.dndSubSection}>
+                <View style={styles.dndDivider} />
+                <Text style={[styles.dndSubTitle, { color: colors.textDim }]}>INTERCEPTION TARGETS</Text>
+                <View style={styles.dndModeRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.dndModeBtn,
+                      dndMode === 'all' && {
+                        backgroundColor: 'rgba(250, 204, 21, 0.16)',
+                        borderColor: 'rgba(250, 204, 21, 0.40)',
+                      },
+                    ]}
+                    onPress={() => setDndMode('all')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="apps" size={15} color={dndMode === 'all' ? colors.primary : colors.textMuted} />
+                    <Text style={[styles.dndModeBtnText, { color: dndMode === 'all' ? colors.primary : colors.textMuted }]}>
+                      All Clearable Apps
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.dndModeBtn,
+                      dndMode === 'selected' && {
+                        backgroundColor: 'rgba(250, 204, 21, 0.16)',
+                        borderColor: 'rgba(250, 204, 21, 0.40)',
+                      },
+                    ]}
+                    onPress={() => setDndMode('selected')}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="filter" size={15} color={dndMode === 'selected' ? colors.primary : colors.textMuted} />
+                    <Text style={[styles.dndModeBtnText, { color: dndMode === 'selected' ? colors.primary : colors.textMuted }]}>
+                      Selected Apps ({blockedPackages.length})
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {dndMode === 'selected' && (
+                  <Text style={[styles.dndHelpText, { color: colors.textDim }]}>
+                    Tip: Go to the Apps tab to select which specific apps are intercepted.
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        </View>
 
         {stats && (
           <View style={styles.section}>
@@ -484,5 +559,63 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     marginTop: 8,
     marginBottom: 16,
+  },
+  dndHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  dndIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dndTextContainer: {
+    flex: 1,
+  },
+  dndSubSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  dndDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 12,
+  },
+  dndSubTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  dndModeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  dndModeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    gap: 6,
+  },
+  dndModeBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dndHelpText: {
+    fontSize: 11,
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });

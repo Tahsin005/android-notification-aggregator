@@ -14,11 +14,12 @@ export interface NotificationItem {
   is_ongoing: number; // 0 or 1
   is_clearable: number; // 0 or 1
   is_read: number; // 0 or 1
+  intercepted_in_dnd?: number; // 0 or 1
   removed_at: number | null;
   created_at: number;
 }
 
-export type DateFilter = 'all' | 'unread' | 'today' | 'yesterday';
+export type DateFilter = 'all' | 'unread' | 'today' | 'yesterday' | 'dnd';
 
 export type RetentionPeriod = '7_days' | '30_days' | 'forever';
 

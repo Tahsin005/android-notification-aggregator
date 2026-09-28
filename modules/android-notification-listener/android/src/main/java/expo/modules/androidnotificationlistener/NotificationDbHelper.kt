@@ -21,6 +21,7 @@ data class NotificationData(
   val isOngoing: Boolean,
   val isClearable: Boolean,
   val isRead: Boolean = false,
+  val interceptedInDnd: Boolean = false,
   val removedAt: Long? = null,
   val createdAt: Long = System.currentTimeMillis()
 )
@@ -80,16 +81,22 @@ object NotificationDbHelper {
         is_ongoing INTEGER DEFAULT 0,
         is_clearable INTEGER DEFAULT 1,
         is_read INTEGER DEFAULT 0,
+        intercepted_in_dnd INTEGER DEFAULT 0,
         removed_at INTEGER,
         created_at INTEGER NOT NULL
       );
       """.trimIndent()
     )
 
+    try {
+      db.execSQL("ALTER TABLE $TABLE_NAME ADD COLUMN intercepted_in_dnd INTEGER DEFAULT 0;")
+    } catch (_: Exception) {}
+
     db.execSQL("CREATE INDEX IF NOT EXISTS idx_notifications_timestamp ON $TABLE_NAME (timestamp DESC);")
     db.execSQL("CREATE INDEX IF NOT EXISTS idx_notifications_package ON $TABLE_NAME (package_name);")
     db.execSQL("CREATE INDEX IF NOT EXISTS idx_notifications_key ON $TABLE_NAME (notification_key);")
     db.execSQL("CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON $TABLE_NAME (is_read);")
+    db.execSQL("CREATE INDEX IF NOT EXISTS idx_notifications_dnd ON $TABLE_NAME (intercepted_in_dnd);")
   }
 
   fun insertOrUpdate(context: Context, data: NotificationData): Boolean {
@@ -99,8 +106,8 @@ object NotificationDbHelper {
       val sql = """
         INSERT INTO $TABLE_NAME (
           notification_key, package_name, app_name, title, text, big_text, sub_text,
-          timestamp, category, group_key, channel_id, is_ongoing, is_clearable, is_read, removed_at, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, ?)
+          timestamp, category, group_key, channel_id, is_ongoing, is_clearable, is_read, intercepted_in_dnd, removed_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, NULL, ?)
         ON CONFLICT(notification_key) DO UPDATE SET
           app_name = excluded.app_name,
           title = excluded.title,
@@ -113,6 +120,7 @@ object NotificationDbHelper {
           channel_id = excluded.channel_id,
           is_ongoing = excluded.is_ongoing,
           is_clearable = excluded.is_clearable,
+          intercepted_in_dnd = CASE WHEN excluded.intercepted_in_dnd = 1 THEN 1 ELSE $TABLE_NAME.intercepted_in_dnd END,
           removed_at = NULL;
       """.trimIndent()
 
@@ -135,7 +143,8 @@ object NotificationDbHelper {
 
         statement.bindLong(12, if (data.isOngoing) 1L else 0L)
         statement.bindLong(13, if (data.isClearable) 1L else 0L)
-        statement.bindLong(14, data.createdAt.takeIf { it > 0 } ?: now)
+        statement.bindLong(14, if (data.interceptedInDnd) 1L else 0L)
+        statement.bindLong(15, data.createdAt.takeIf { it > 0 } ?: now)
 
         statement.execute()
         true

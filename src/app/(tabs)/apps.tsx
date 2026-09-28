@@ -20,9 +20,11 @@ import { AppIconBadge } from '../../components/AppIconBadge';
 import { EmptyState } from '../../components/EmptyState';
 import { AmbientBackground } from '../../components/AmbientBackground';
 import { notificationEvents } from '../../services/notificationEvents';
+import { useDnd } from '../../hooks/useDnd';
 
 export default function AppsScreen() {
   const { colors, isDark } = useTheme();
+  const { blockedPackages, toggleAppBlocked } = useDnd();
   const [apps, setApps] = useState<AppNotificationSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -94,7 +96,34 @@ export default function AppsScreen() {
         </View>
 
         <View style={styles.rightContainer}>
-          <View style={[styles.countBadge, { backgroundColor: colors.primaryLight, borderColor: 'rgba(56, 189, 248, 0.25)' }]}>
+          <TouchableOpacity
+            style={[
+              styles.dndAppBtn,
+              blockedPackages.includes(item.package_name)
+                ? {
+                    backgroundColor: 'rgba(250, 204, 21, 0.16)',
+                    borderColor: 'rgba(250, 204, 21, 0.40)',
+                  }
+                : {
+                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                  },
+            ]}
+            onPress={(e) => {
+              e.stopPropagation();
+              toggleAppBlocked(item.package_name);
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={`Toggle DND interception for ${cleanName}`}
+          >
+            <Ionicons
+              name={blockedPackages.includes(item.package_name) ? 'moon' : 'moon-outline'}
+              size={14}
+              color={blockedPackages.includes(item.package_name) ? colors.primary : colors.textDim}
+            />
+          </TouchableOpacity>
+
+          <View style={[styles.countBadge, { backgroundColor: colors.primaryLight, borderColor: 'rgba(250, 204, 21, 0.35)' }]}>
             <Text style={[styles.countText, { color: colors.primary }]}>
               {item.count.toLocaleString()}
             </Text>
@@ -215,5 +244,13 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 12.5,
     fontWeight: '700',
+  },
+  dndAppBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

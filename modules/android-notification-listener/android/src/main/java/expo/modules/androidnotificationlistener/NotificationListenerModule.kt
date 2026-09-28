@@ -36,6 +36,7 @@ class NotificationListenerModule : Module() {
           "isOngoing" to data.isOngoing,
           "isClearable" to data.isClearable,
           "isRead" to data.isRead,
+          "interceptedInDnd" to (if (data.interceptedInDnd) 1 else 0),
           "removedAt" to data.removedAt,
           "createdAt" to data.createdAt
         )
@@ -243,6 +244,34 @@ class NotificationListenerModule : Module() {
 
     AsyncFunction("clearAllNotifications") {
       NotificationDbHelper.clearAllNotifications(context)
+    }
+
+    AsyncFunction("isDndEnabled") {
+      DndManager.isDndEnabled(context)
+    }
+
+    AsyncFunction("setDndEnabled") { enabled: Boolean ->
+      DndManager.setDndEnabled(context, enabled)
+    }
+
+    AsyncFunction("getDndMode") {
+      DndManager.getDndMode(context)
+    }
+
+    AsyncFunction("setDndMode") { mode: String ->
+      DndManager.setDndMode(context, mode)
+    }
+
+    AsyncFunction("getDndBlockedPackages") {
+      DndManager.getBlockedPackages(context)
+    }
+
+    AsyncFunction("setDndBlockedPackages") { packages: List<String> ->
+      DndManager.setBlockedPackages(context, packages)
+    }
+
+    AsyncFunction("toggleDndPackage") { packageName: String ->
+      DndManager.toggleBlockedPackage(context, packageName)
     }
   }
 }

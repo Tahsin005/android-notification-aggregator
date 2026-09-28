@@ -111,11 +111,32 @@ class NotificationAggregatorService : NotificationListenerService() {
         return
       }
 
-      // 1. Write immediately to local SQLite database (works even when React Native is closed)
-      NotificationDbHelper.insertOrUpdate(this, data)
+      // Check Do Not Disturb interception policy
+      val packageName = data.packageName
+      val shouldIntercept = DndManager.shouldIntercept(this, packageName)
+      val canCancel = sbn.isClearable && !sbn.isOngoing
 
-      // 2. Emit event to active React Native UI if connected
-      NotificationListenerModule.notifyNotificationPosted(data)
+      val dataToSave = if (shouldIntercept && canCancel) {
+        data.copy(interceptedInDnd = true)
+      } else {
+        data
+      }
+
+      // 1. Write immediately to local SQLite database (works even when React Native is closed)
+      NotificationDbHelper.insertOrUpdate(this, dataToSave)
+
+      // 2. Dismiss from system notification tray if DND applies
+      if (shouldIntercept && canCancel) {
+        try {
+          cancelNotification(sbn.key)
+          Log.i(TAG, "DND intercepted & dismissed notification ${sbn.key} from $packageName")
+        } catch (e: Exception) {
+          Log.w(TAG, "Could not cancel notification for DND: ${e.message}")
+        }
+      }
+
+      // 3. Emit event to active React Native UI if connected
+      NotificationListenerModule.notifyNotificationPosted(dataToSave)
     } catch (e: Exception) {
       Log.e(TAG, "Error handling posted notification: ${e.message}")
     }

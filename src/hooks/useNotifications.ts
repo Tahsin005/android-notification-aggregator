@@ -143,6 +143,7 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
             is_ongoing: item.isOngoing ? 1 : 0,
             is_clearable: item.isClearable ? 1 : 0,
             is_read: 0,
+            intercepted_in_dnd: item.interceptedInDnd ?? 0,
             removed_at: item.removedAt,
             created_at: item.createdAt,
           };

@@ -35,6 +35,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
         is_ongoing INTEGER DEFAULT 0,
         is_clearable INTEGER DEFAULT 1,
         is_read INTEGER DEFAULT 0,
+        intercepted_in_dnd INTEGER DEFAULT 0,
         removed_at INTEGER,
         created_at INTEGER NOT NULL
       );
@@ -43,12 +44,19 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
       CREATE INDEX IF NOT EXISTS idx_notifications_package ON notifications (package_name);
       CREATE INDEX IF NOT EXISTS idx_notifications_key ON notifications (notification_key);
       CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications (is_read);
+      CREATE INDEX IF NOT EXISTS idx_notifications_dnd ON notifications (intercepted_in_dnd);
 
       CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY NOT NULL,
         value TEXT NOT NULL
       );
     `);
+
+    try {
+      await db.execAsync('ALTER TABLE notifications ADD COLUMN intercepted_in_dnd INTEGER DEFAULT 0;');
+    } catch {
+      // Column already exists
+    }
 
     dbInstance = db;
     return db;

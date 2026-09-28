@@ -14,6 +14,13 @@ declare class NotificationListenerNativeModule extends NativeModule<{
   markAllAsRead(): Promise<boolean>;
   deleteNotification(notificationKey: string): Promise<boolean>;
   clearAllNotifications(): Promise<boolean>;
+  isDndEnabled(): Promise<boolean>;
+  setDndEnabled(enabled: boolean): Promise<boolean>;
+  getDndMode(): Promise<string>;
+  setDndMode(mode: string): Promise<boolean>;
+  getDndBlockedPackages(): Promise<string[]>;
+  setDndBlockedPackages(packages: string[]): Promise<boolean>;
+  toggleDndPackage(packageName: string): Promise<boolean>;
 }
 
 const nativeModule = requireOptionalNativeModule<NotificationListenerNativeModule>('NotificationListener');
@@ -50,6 +57,27 @@ const fallbackModule = {
     return true;
   },
   async clearAllNotifications(): Promise<boolean> {
+    return true;
+  },
+  async isDndEnabled(): Promise<boolean> {
+    return false;
+  },
+  async setDndEnabled(_enabled: boolean): Promise<boolean> {
+    return true;
+  },
+  async getDndMode(): Promise<string> {
+    return 'all';
+  },
+  async setDndMode(_mode: string): Promise<boolean> {
+    return true;
+  },
+  async getDndBlockedPackages(): Promise<string[]> {
+    return [];
+  },
+  async setDndBlockedPackages(_packages: string[]): Promise<boolean> {
+    return true;
+  },
+  async toggleDndPackage(_packageName: string): Promise<boolean> {
     return true;
   },
   addListener(_eventName: string, _listener: any) {

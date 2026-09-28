@@ -17,8 +17,8 @@ export async function insertNotification(item: Omit<NotificationItem, 'id'>): Pr
     `
     INSERT INTO notifications (
       notification_key, package_name, app_name, title, text, big_text, sub_text,
-      timestamp, category, group_key, channel_id, is_ongoing, is_clearable, is_read, removed_at, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      timestamp, category, group_key, channel_id, is_ongoing, is_clearable, is_read, intercepted_in_dnd, removed_at, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(notification_key) DO UPDATE SET
       app_name = excluded.app_name,
       title = excluded.title,
@@ -31,6 +31,7 @@ export async function insertNotification(item: Omit<NotificationItem, 'id'>): Pr
       channel_id = excluded.channel_id,
       is_ongoing = excluded.is_ongoing,
       is_clearable = excluded.is_clearable,
+      intercepted_in_dnd = CASE WHEN excluded.intercepted_in_dnd = 1 THEN 1 ELSE notifications.intercepted_in_dnd END,
       removed_at = NULL;
     `,
     [
@@ -48,6 +49,7 @@ export async function insertNotification(item: Omit<NotificationItem, 'id'>): Pr
       item.is_ongoing ?? 0,
       item.is_clearable ?? 1,
       item.is_read ?? 0,
+      item.intercepted_in_dnd ?? 0,
       item.removed_at ?? null,
       item.created_at || Date.now(),
     ]
@@ -69,6 +71,8 @@ export async function getNotifications(params: NotificationQueryParams = {}): Pr
 
   if (filter === 'unread') {
     conditions.push('is_read = 0');
+  } else if (filter === 'dnd') {
+    conditions.push('intercepted_in_dnd = 1');
   } else if (filter === 'today') {
     conditions.push('timestamp >= ?');
     args.push(startOfToday);

@@ -178,6 +178,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
                 <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Status</Text>
                 <Text style={[styles.metaValue, { color: colors.text }]}>
                   {isRead ? 'Read' : 'Unread'}
+                  {item.intercepted_in_dnd === 1 ? ' • Vaulted in DND' : ''}
                   {item.is_ongoing === 1 ? ' • Ongoing' : ''}
                   {item.removed_at ? ' • Dismissed' : ''}
                 </Text>

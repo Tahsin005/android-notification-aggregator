@@ -37,6 +37,34 @@ export async function clearAllNotifications(): Promise<boolean> {
   return await NotificationListenerModule.clearAllNotifications();
 }
 
+export async function isDndEnabled(): Promise<boolean> {
+  return await NotificationListenerModule.isDndEnabled();
+}
+
+export async function setDndEnabled(enabled: boolean): Promise<boolean> {
+  return await NotificationListenerModule.setDndEnabled(enabled);
+}
+
+export async function getDndMode(): Promise<string> {
+  return await NotificationListenerModule.getDndMode();
+}
+
+export async function setDndMode(mode: string): Promise<boolean> {
+  return await NotificationListenerModule.setDndMode(mode);
+}
+
+export async function getDndBlockedPackages(): Promise<string[]> {
+  return await NotificationListenerModule.getDndBlockedPackages();
+}
+
+export async function setDndBlockedPackages(packages: string[]): Promise<boolean> {
+  return await NotificationListenerModule.setDndBlockedPackages(packages);
+}
+
+export async function toggleDndPackage(packageName: string): Promise<boolean> {
+  return await NotificationListenerModule.toggleDndPackage(packageName);
+}
+
 export function addNotificationPostedListener(
   listener: (notification: NativeNotificationItem) => void
 ) {

@@ -12,9 +12,10 @@ interface FilterBarProps {
   unreadCount?: number;
 }
 
-const FILTERS: { key: DateFilter; label: string }[] = [
+const FILTERS: { key: DateFilter; label: string; icon?: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'all', label: 'All' },
   { key: 'unread', label: 'Unread' },
+  { key: 'dnd', label: 'DND Vault', icon: 'moon' },
   { key: 'today', label: 'Today' },
   { key: 'yesterday', label: 'Yesterday' },
 ];
@@ -74,6 +75,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               onPress={() => onSelectFilter(f.key)}
               activeOpacity={0.7}
             >
+              {f.icon && (
+                <Ionicons
+                  name={f.icon}
+                  size={12}
+                  color={isSelected ? colors.primary : colors.textMuted}
+                  style={{ marginRight: 5 }}
+                />
+              )}
               <Text
                 style={[
                   styles.chipText,

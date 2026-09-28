@@ -53,6 +53,12 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         </View>
 
         <View style={styles.metaRow}>
+          {item.intercepted_in_dnd === 1 && (
+            <View style={[styles.dndBadge, { backgroundColor: 'rgba(250, 204, 21, 0.12)', borderColor: 'rgba(250, 204, 21, 0.35)' }]}>
+              <Ionicons name="moon" size={9} color={colors.primary} />
+              <Text style={[styles.dndBadgeText, { color: colors.primary }]}>DND</Text>
+            </View>
+          )}
           {isUnread && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}
           <Text style={[styles.timeText, { color: colors.textMuted }]}>
             {formatRelativeTime(item.timestamp)}
@@ -242,5 +248,20 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 10.5,
     fontWeight: '600',
+  },
+  dndBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 3,
+    marginRight: 4,
+  },
+  dndBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });
