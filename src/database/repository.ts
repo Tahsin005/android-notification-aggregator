@@ -1,5 +1,7 @@
 import { getDatabase } from './db';
 import * as NativeListener from '@/modules/android-notification-listener';
+import { notificationEvents } from '../services/notificationEvents';
+import { resolveAppName } from '../utils/appInfo';
 import {
   NotificationItem,
   NotificationQueryParams,
@@ -9,6 +11,7 @@ import {
 } from '../types/notification';
 
 export async function insertNotification(item: Omit<NotificationItem, 'id'>): Promise<void> {
+  const cleanAppName = resolveAppName(item.package_name, item.app_name);
   const db = await getDatabase();
   await db.runAsync(
     `
@@ -33,7 +36,7 @@ export async function insertNotification(item: Omit<NotificationItem, 'id'>): Pr
     [
       item.notification_key,
       item.package_name,
-      item.app_name,
+      cleanAppName,
       item.title,
       item.text,
       item.big_text,
@@ -49,6 +52,7 @@ export async function insertNotification(item: Omit<NotificationItem, 'id'>): Pr
       item.created_at || Date.now(),
     ]
   );
+  notificationEvents.notifyMutation();
 }
 
 export async function getNotifications(params: NotificationQueryParams = {}): Promise<NotificationItem[]> {
@@ -170,6 +174,7 @@ export async function markAsRead(notificationKey: string): Promise<void> {
   } catch (e) {
     console.warn('expo-sqlite markAsRead error:', e);
   }
+  notificationEvents.notifyMutation();
 }
 
 export async function markAsUnread(notificationKey: string): Promise<void> {
@@ -189,6 +194,7 @@ export async function markAsUnread(notificationKey: string): Promise<void> {
   } catch (e) {
     console.warn('expo-sqlite markAsUnread error:', e);
   }
+  notificationEvents.notifyMutation();
 }
 
 export async function markAllAsRead(): Promise<void> {
@@ -206,6 +212,7 @@ export async function markAllAsRead(): Promise<void> {
   } catch (e) {
     console.warn('expo-sqlite markAllAsRead error:', e);
   }
+  notificationEvents.notifyMutation();
 }
 
 export async function deleteNotification(notificationKey: string): Promise<void> {
@@ -223,6 +230,7 @@ export async function deleteNotification(notificationKey: string): Promise<void>
   } catch (e) {
     console.warn('expo-sqlite deleteNotification error:', e);
   }
+  notificationEvents.notifyMutation();
 }
 
 export async function clearNotifications(): Promise<void> {
@@ -245,6 +253,7 @@ export async function clearNotifications(): Promise<void> {
       throw e;
     }
   }
+  notificationEvents.notifyMutation();
 }
 
 export async function deleteExpiredNotifications(retention: RetentionPeriod): Promise<number> {
@@ -263,6 +272,9 @@ export async function deleteExpiredNotifications(retention: RetentionPeriod): Pr
   const cutoff = now - days * 24 * 60 * 60 * 1000;
   const db = await getDatabase();
   const result = await db.runAsync(`DELETE FROM notifications WHERE timestamp < ?;`, [cutoff]);
+  if (result.changes > 0) {
+    notificationEvents.notifyMutation();
+  }
   return result.changes;
 }
 

@@ -1,12 +1,21 @@
 export interface ColorPalette {
   background: string;
   card: string;
+  cardBorder: string;
+  cardBorderTop: string;
   surface: string;
+  glassPanel: string;
+  glassPanelBorder: string;
+  glassHover: string;
   text: string;
   textMuted: string;
+  textDim: string;
   border: string;
   primary: string;
   primaryLight: string;
+  accent2: string;
+  accent3: string;
+  glowPrimary: string;
   danger: string;
   dangerLight: string;
   success: string;
@@ -14,40 +23,67 @@ export interface ColorPalette {
   warning: string;
   warningLight: string;
   badge: string;
+  tabBarBg: string;
+  dockActiveBg: string;
+  dockActiveBorder: string;
 }
 
 export const lightColors: ColorPalette = {
-  background: '#F8FAFC',
-  card: '#FFFFFF',
-  surface: '#F1F5F9',
-  text: '#0F172A',
-  textMuted: '#64748B',
-  border: '#E2E8F0',
-  primary: '#2563EB',
-  primaryLight: '#EFF6FF',
-  danger: '#EF4444',
-  dangerLight: '#FEF2F2',
-  success: '#10B981',
-  successLight: '#ECFDF5',
-  warning: '#F59E0B',
-  warningLight: '#FFFBEB',
-  badge: '#E2E8F0',
+  background: '#07080A', // Keep unified obsidian canvas for luxury aesthetic
+  card: 'rgba(20, 23, 31, 0.82)',
+  cardBorder: 'rgba(255, 255, 255, 0.08)',
+  cardBorderTop: 'rgba(255, 255, 255, 0.18)',
+  surface: 'rgba(255, 255, 255, 0.06)',
+  glassPanel: 'rgba(18, 21, 28, 0.94)',
+  glassPanelBorder: 'rgba(255, 255, 255, 0.12)',
+  glassHover: 'rgba(255, 255, 255, 0.09)',
+  text: '#FFFFFF',
+  textMuted: '#9CA3AF',
+  textDim: '#6B7280',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#FACC15', // Solar Gold / Electric Amber (Mobbin Box Box style)
+  primaryLight: 'rgba(250, 204, 21, 0.16)',
+  accent2: '#FB923C',
+  accent3: '#F59E0B',
+  glowPrimary: 'rgba(250, 204, 21, 0.28)',
+  danger: '#F87171',
+  dangerLight: 'rgba(248, 113, 113, 0.14)',
+  success: '#34D399',
+  successLight: 'rgba(52, 211, 153, 0.14)',
+  warning: '#FBBF24',
+  warningLight: 'rgba(251, 191, 36, 0.14)',
+  badge: 'rgba(255, 255, 255, 0.08)',
+  tabBarBg: 'rgba(18, 21, 28, 0.94)',
+  dockActiveBg: '#262933',
+  dockActiveBorder: 'rgba(255, 255, 255, 0.18)',
 };
 
 export const darkColors: ColorPalette = {
-  background: '#0B0F19',
-  card: '#151C2C',
-  surface: '#1E293B',
-  text: '#F8FAFC',
-  textMuted: '#94A3B8',
-  border: '#1E293B',
-  primary: '#3B82F6',
-  primaryLight: '#1E3A8A',
+  background: '#060709', // Deep Obsidian Pitch Black
+  card: 'rgba(17, 20, 28, 0.80)',
+  cardBorder: 'rgba(255, 255, 255, 0.08)',
+  cardBorderTop: 'rgba(255, 255, 255, 0.18)',
+  surface: 'rgba(255, 255, 255, 0.05)',
+  glassPanel: 'rgba(16, 19, 26, 0.94)',
+  glassPanelBorder: 'rgba(255, 255, 255, 0.12)',
+  glassHover: 'rgba(255, 255, 255, 0.08)',
+  text: '#FFFFFF',
+  textMuted: '#9CA3AF',
+  textDim: '#6B7280',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primary: '#FACC15', // Solar Gold / Electric Amber
+  primaryLight: 'rgba(250, 204, 21, 0.16)',
+  accent2: '#FB923C',
+  accent3: '#F59E0B',
+  glowPrimary: 'rgba(250, 204, 21, 0.28)',
   danger: '#F87171',
-  dangerLight: '#450A0A',
+  dangerLight: 'rgba(248, 113, 113, 0.14)',
   success: '#34D399',
-  successLight: '#064E3B',
+  successLight: 'rgba(52, 211, 153, 0.14)',
   warning: '#FBBF24',
-  warningLight: '#451A03',
-  badge: '#334155',
+  warningLight: 'rgba(251, 191, 36, 0.14)',
+  badge: 'rgba(255, 255, 255, 0.08)',
+  tabBarBg: 'rgba(16, 19, 26, 0.94)',
+  dockActiveBg: '#262933',
+  dockActiveBorder: 'rgba(255, 255, 255, 0.18)',
 };

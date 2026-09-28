@@ -20,6 +20,7 @@ import { NotificationCard } from '../../components/NotificationCard';
 import { NotificationDetailModal } from '../../components/NotificationDetailModal';
 import { EmptyState } from '../../components/EmptyState';
 import { PermissionBanner } from '../../components/PermissionBanner';
+import { AmbientBackground } from '../../components/AmbientBackground';
 import { DateFilter, NotificationItem } from '../../types/notification';
 import { groupNotificationsByDate } from '../../utils/date';
 
@@ -45,6 +46,7 @@ export default function ArchiveScreen() {
 
   const {
     notifications,
+    unreadCount,
     isLoading,
     isRefreshing,
     hasMore,
@@ -63,10 +65,6 @@ export default function ArchiveScreen() {
     return groupNotificationsByDate(notifications);
   }, [notifications]);
 
-  const unreadCount = useMemo(() => {
-    return notifications.filter((n) => n.is_read === 0).length;
-  }, [notifications]);
-
   const handleCardPress = (item: NotificationItem) => {
     setSelectedItem(item.is_read === 0 ? { ...item, is_read: 1 } : item);
     if (item.is_read === 0) {
@@ -75,8 +73,8 @@ export default function ArchiveScreen() {
   };
 
   const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (
-    <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
-      <Text style={[styles.sectionHeaderText, { color: colors.textMuted }]}>{title}</Text>
+    <View style={styles.sectionHeader}>
+      <Text style={[styles.sectionHeaderText, { color: colors.textDim }]}>{title.toUpperCase()}</Text>
     </View>
   );
 
@@ -108,6 +106,7 @@ export default function ArchiveScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <AmbientBackground />
 
       <Header
         isPermissionGranted={isGranted}
@@ -187,17 +186,17 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
-    paddingBottom: 24,
+    paddingBottom: 130, // Generous padding so last items clear floating dock
   },
   sectionHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 4,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 6,
   },
   sectionHeaderText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1.2,
   },
   loadingContainer: {
     flex: 1,
@@ -206,7 +205,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   footerLoader: {
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: 'center',
   },
 });

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 export default function PrivacyScreen() {
   const { colors, isDark } = useTheme();
@@ -11,8 +12,9 @@ export default function PrivacyScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <AmbientBackground />
 
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: 'rgba(255, 255, 255, 0.08)' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -20,7 +22,7 @@ export default function PrivacyScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.heroCard, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}>
+        <View style={[styles.heroCard, { backgroundColor: colors.card, borderColor: 'rgba(56, 189, 248, 0.35)', borderTopColor: 'rgba(56, 189, 248, 0.65)' }]}>
           <Ionicons name="shield-checkmark" size={36} color={colors.primary} />
           <Text style={[styles.heroTitle, { color: colors.primary }]}>100% On-Device & Private</Text>
           <Text style={[styles.heroSubtitle, { color: colors.text }]}>
@@ -29,9 +31,9 @@ export default function PrivacyScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>CORE PRIVACY COMMITMENTS</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textDim }]}>CORE PRIVACY COMMITMENTS</Text>
 
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
             <View style={styles.itemRow}>
               <View style={[styles.iconBox, { backgroundColor: colors.surface }]}>
                 <Ionicons name="server-outline" size={20} color={colors.success} />
@@ -44,7 +46,7 @@ export default function PrivacyScreen() {
               </View>
             </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={[styles.divider, { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]} />
 
             <View style={styles.itemRow}>
               <View style={[styles.iconBox, { backgroundColor: colors.surface }]}>
@@ -58,7 +60,7 @@ export default function PrivacyScreen() {
               </View>
             </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={[styles.divider, { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]} />
 
             <View style={styles.itemRow}>
               <View style={[styles.iconBox, { backgroundColor: colors.surface }]}>
@@ -67,7 +69,7 @@ export default function PrivacyScreen() {
               <View style={styles.itemTextContainer}>
                 <Text style={[styles.itemTitle, { color: colors.text }]}>Local SQLite Database</Text>
                 <Text style={[styles.itemDescription, { color: colors.textMuted }]}>
-                  All captured titles, texts, and timestamps reside strictly in an encrypted/app-private SQLite database inside your phone’s internal storage.
+                  All captured titles, texts, and timestamps reside strictly in an app-private SQLite database inside your phone’s internal storage.
                 </Text>
               </View>
             </View>
@@ -75,9 +77,9 @@ export default function PrivacyScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>WHY NOTIFICATION ACCESS IS REQUIRED</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textDim }]}>WHY NOTIFICATION ACCESS IS REQUIRED</Text>
 
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, padding: 16 }]}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop, padding: 16 }]}>
             <Text style={[styles.paraText, { color: colors.text }]}>
               Android protects notifications behind a specialized permission named <Text style={{ fontWeight: '700' }}>Notification Access (NotificationListenerService)</Text>.
             </Text>
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     gap: 12,
   },
   backButton: {
@@ -112,9 +114,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
+    letterSpacing: -0.4,
   },
   content: {
     padding: 16,
+    paddingBottom: 40,
     gap: 20,
   },
   heroCard: {
@@ -124,13 +128,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     textAlign: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 3,
   },
   heroTitle: {
     fontSize: 18,
     fontWeight: '700',
+    letterSpacing: -0.3,
   },
   heroSubtitle: {
-    fontSize: 14,
+    fontSize: 13.5,
     lineHeight: 20,
     textAlign: 'center',
   },
@@ -138,9 +148,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 1.1,
     marginLeft: 4,
   },
   card: {
@@ -173,11 +183,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   divider: {
-    height: StyleSheet.hairlineWidth,
+    height: 1,
     marginHorizontal: 16,
   },
   paraText: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13.5,
+    lineHeight: 20,
   },
 });

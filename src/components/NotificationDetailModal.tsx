@@ -14,8 +14,9 @@ import {
 import { useTheme } from '../hooks/useTheme';
 import { launchApp } from '../services/notificationService';
 import { NotificationItem } from '../types/notification';
-import { getAppColor, getAppInitials } from '../utils/appColor';
+import { resolveAppName } from '../utils/appInfo';
 import { formatFullDateTime } from '../utils/date';
+import { AppIconBadge } from './AppIconBadge';
 
 interface NotificationDetailModalProps {
   item: NotificationItem | null;
@@ -46,15 +47,14 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
 
   if (!item) return null;
 
-  const appColor = getAppColor(item.package_name);
-  const initials = getAppInitials(item.app_name);
+  const displayName = resolveAppName(item.package_name, item.app_name);
 
   const handleOpenApp = async () => {
     setIsOpeningApp(true);
     try {
       const opened = await launchApp(item.package_name);
       if (!opened) {
-        const msg = `Unable to open ${item.app_name || item.package_name}. Please verify the app is installed.`;
+        const msg = `Unable to open ${displayName}. Please verify the app is installed.`;
         if (Platform.OS === 'android') {
           ToastAndroid.show(msg, ToastAndroid.LONG);
         } else {
@@ -96,18 +96,24 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.container,
+            {
+              backgroundColor: colors.glassPanel,
+              borderColor: colors.glassPanelBorder,
+            },
+          ]}
+        >
 
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <View style={[styles.header, { borderBottomColor: 'rgba(255, 255, 255, 0.08)' }]}>
             <View style={styles.appHeader}>
-              <View style={[styles.avatar, { backgroundColor: appColor.bg }]}>
-                <Text style={[styles.avatarText, { color: appColor.text }]}>{initials}</Text>
-              </View>
+              <AppIconBadge packageName={item.package_name} size={42} />
               <View style={styles.appTitleBox}>
                 <Text style={[styles.appName, { color: colors.text }]} numberOfLines={1}>
-                  {item.app_name}
+                  {displayName}
                 </Text>
-                <Text style={[styles.packageName, { color: colors.textMuted }]} numberOfLines={1}>
+                <Text style={[styles.packageName, { color: colors.textDim }]} numberOfLines={1}>
                   {item.package_name}
                 </Text>
               </View>
@@ -118,7 +124,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
               style={[styles.closeButton, { backgroundColor: colors.surface }]}
               accessibilityLabel="Close"
             >
-              <Ionicons name="close" size={20} color={colors.text} />
+              <Ionicons name="close" size={18} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -131,21 +137,21 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
             ) : null}
 
             {item.text || item.big_text ? (
-              <Text style={[styles.contentText, { color: colors.text }]} selectable>
+              <Text style={[styles.contentText, { color: colors.textMuted }]} selectable>
                 {item.big_text || item.text}
               </Text>
             ) : null}
 
             {item.sub_text ? (
-              <View style={[styles.subTextBox, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.subTextLabel, { color: colors.textMuted }]}>Subtext: </Text>
+              <View style={[styles.subTextBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.subTextLabel, { color: colors.textDim }]}>Subtext: </Text>
                 <Text style={[styles.subTextVal, { color: colors.text }]}>{item.sub_text}</Text>
               </View>
             ) : null}
 
 
             <View style={[styles.metaCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.metaHeader, { color: colors.textMuted }]}>DETAILS</Text>
+              <Text style={[styles.metaHeader, { color: colors.textDim }]}>DETAILS</Text>
 
               <View style={styles.metaRow}>
                 <Text style={[styles.metaLabel, { color: colors.textMuted }]}>Timestamp</Text>
@@ -180,24 +186,24 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
           </ScrollView>
 
 
-          <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+          <View style={[styles.footer, { borderTopColor: 'rgba(255, 255, 255, 0.08)', backgroundColor: colors.glassPanel }]}>
             <TouchableOpacity
               style={[styles.primaryButton, { backgroundColor: colors.primary }]}
               onPress={handleOpenApp}
               disabled={isOpeningApp}
             >
-              <Ionicons name="open-outline" size={18} color="#FFFFFF" />
+              <Ionicons name="open-outline" size={18} color="#070A10" />
               <Text style={styles.primaryButtonText}>Open App</Text>
             </TouchableOpacity>
 
             <View style={styles.secondaryActions}>
               <TouchableOpacity
-                style={[styles.secondaryButton, { backgroundColor: colors.surface }]}
+                style={[styles.secondaryButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={handleToggleRead}
               >
                 <Ionicons
                   name={isRead ? 'mail-outline' : 'mail-open-outline'}
-                  size={18}
+                  size={17}
                   color={colors.text}
                 />
                 <Text style={[styles.secondaryButtonText, { color: colors.text }]}>
@@ -206,10 +212,10 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.dangerButton, { backgroundColor: colors.dangerLight }]}
+                style={[styles.dangerButton, { backgroundColor: colors.dangerLight, borderColor: 'rgba(248, 113, 113, 0.25)' }]}
                 onPress={handleDelete}
               >
-                <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                <Ionicons name="trash-outline" size={17} color={colors.danger} />
                 <Text style={[styles.dangerButtonText, { color: colors.danger }]}>Delete</Text>
               </TouchableOpacity>
             </View>
@@ -223,13 +229,14 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    backgroundColor: 'rgba(0, 0, 0, 0.70)',
     justifyContent: 'flex-end',
   },
   container: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.20)',
     maxHeight: '85%',
   },
   header: {
@@ -238,7 +245,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
   },
   appHeader: {
     flexDirection: 'row',
@@ -246,27 +253,17 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
   appTitleBox: {
+    marginLeft: 12,
     flex: 1,
   },
   appName: {
     fontSize: 16,
     fontWeight: '700',
+    letterSpacing: -0.3,
   },
   packageName: {
-    fontSize: 11,
+    fontSize: 11.5,
     marginTop: 1,
   },
   closeButton: {
@@ -278,80 +275,74 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    gap: 16,
   },
   contentTitle: {
     fontSize: 18,
     fontWeight: '700',
+    letterSpacing: -0.4,
     lineHeight: 24,
-    marginBottom: 10,
   },
   contentText: {
-    fontSize: 15,
+    fontSize: 14.5,
     lineHeight: 22,
-    marginBottom: 16,
   },
   subTextBox: {
     flexDirection: 'row',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 16,
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   subTextLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   subTextVal: {
-    fontSize: 13,
+    fontSize: 12,
     flex: 1,
   },
   metaCard: {
-    padding: 14,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    marginTop: 8,
+    padding: 14,
     gap: 10,
   },
   metaHeader: {
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     marginBottom: 2,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   metaLabel: {
     fontSize: 13,
-    fontWeight: '500',
-    flex: 1,
   },
   metaValue: {
     fontSize: 13,
     fontWeight: '500',
-    textAlign: 'right',
-    flex: 2,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 24,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    padding: 16,
     gap: 10,
+    borderTopWidth: 1,
   },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     height: 48,
-    borderRadius: 12,
+    borderRadius: 14,
     gap: 8,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: '#070A10',
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   secondaryActions: {
     flexDirection: 'row',
@@ -364,10 +355,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 44,
     borderRadius: 12,
+    borderWidth: 1,
     gap: 6,
   },
   secondaryButtonText: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '600',
   },
   dangerButton: {
@@ -377,10 +369,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: 44,
     borderRadius: 12,
+    borderWidth: 1,
     gap: 6,
   },
   dangerButtonText: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '600',
   },
 });

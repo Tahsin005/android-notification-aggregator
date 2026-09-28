@@ -37,12 +37,22 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       >
         {activeAppFilter && (
           <TouchableOpacity
-            style={[styles.chip, styles.activeAppChip, { backgroundColor: colors.primary }]}
+            style={[
+              styles.chip,
+              styles.activeAppChip,
+              {
+                backgroundColor: 'rgba(250, 204, 21, 0.18)',
+                borderColor: 'rgba(250, 204, 21, 0.45)',
+                borderTopColor: 'rgba(250, 204, 21, 0.65)',
+              },
+            ]}
             onPress={onClearAppFilter}
             activeOpacity={0.8}
           >
-            <Text style={styles.activeAppText}>App: {activeAppFilter.appName}</Text>
-            <Ionicons name="close" size={14} color="#FFFFFF" style={styles.closeIcon} />
+            <Text style={[styles.activeAppText, { color: colors.primary }]}>
+              App: {activeAppFilter.appName}
+            </Text>
+            <Ionicons name="close" size={14} color={colors.primary} style={styles.closeIcon} />
           </TouchableOpacity>
         )}
 
@@ -56,8 +66,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               style={[
                 styles.chip,
                 {
-                  backgroundColor: isSelected ? colors.primary : colors.surface,
-                  borderColor: isSelected ? colors.primary : colors.border,
+                  backgroundColor: isSelected ? 'rgba(250, 204, 21, 0.16)' : 'rgba(255, 255, 255, 0.04)',
+                  borderColor: isSelected ? 'rgba(250, 204, 21, 0.40)' : 'rgba(255, 255, 255, 0.08)',
+                  borderTopColor: isSelected ? 'rgba(250, 204, 21, 0.65)' : 'rgba(255, 255, 255, 0.14)',
                 },
               ]}
               onPress={() => onSelectFilter(f.key)}
@@ -67,8 +78,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 style={[
                   styles.chipText,
                   {
-                    color: isSelected ? '#FFFFFF' : colors.text,
-                    fontWeight: isSelected ? '600' : '500',
+                    color: isSelected ? colors.primary : colors.textMuted,
+                    fontWeight: isSelected ? '700' : '500',
                   },
                 ]}
               >
@@ -79,14 +90,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   style={[
                     styles.badge,
                     {
-                      backgroundColor: isSelected ? '#FFFFFF' : colors.primary,
+                      backgroundColor: isSelected ? colors.primary : 'rgba(250, 204, 21, 0.25)',
                     },
                   ]}
                 >
                   <Text
                     style={[
                       styles.badgeText,
-                      { color: isSelected ? colors.primary : '#FFFFFF' },
+                      { color: isSelected ? '#070A10' : colors.primary },
                     ]}
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}
@@ -103,13 +114,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingVertical: 6,
+    marginVertical: 4,
   },
   container: {
     paddingHorizontal: 16,
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
+    alignItems: 'center',
   },
   chip: {
     flexDirection: 'row',
@@ -121,27 +132,25 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chipText: {
-    fontSize: 13,
+    fontSize: 12.5,
+    letterSpacing: 0.1,
   },
   badge: {
     paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingVertical: 1.5,
     borderRadius: 10,
-    minWidth: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
   },
   activeAppChip: {
-    borderWidth: 0,
-    paddingRight: 10,
+    borderStyle: 'dashed',
   },
   activeAppText: {
-    color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '600',
   },
   closeIcon: {

@@ -3,10 +3,12 @@ import {
   clearNotifications,
   deleteNotification,
   getNotifications,
+  getUnreadCount,
   markAllAsRead,
   markAsRead,
   markAsUnread,
 } from '../database/repository';
+import { notificationEvents } from '../services/notificationEvents';
 import { subscribeToNotificationEvents } from '../services/notificationService';
 import { DateFilter, NotificationItem } from '../types/notification';
 
@@ -20,63 +22,82 @@ const PAGE_SIZE = 30;
 
 export function useNotifications({ filter, packageName, searchQuery }: UseNotificationsProps) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
 
-  // Load initial or filter-changed items
-  useEffect(() => {
-    let isCancelled = false;
-
-    getNotifications({
-      page: 1,
-      limit: PAGE_SIZE,
-      filter,
-      packageName,
-      search: searchQuery,
-    })
-      .then((rows) => {
-        if (!isCancelled) {
-          setNotifications(rows);
-          setHasMore(rows.length === PAGE_SIZE);
-          setPage(1);
-          setIsLoading(false);
-          setIsRefreshing(false);
-        }
-      })
-      .catch((err) => {
-        console.warn('Error loading notifications:', err);
-        if (!isCancelled) {
-          setIsLoading(false);
-          setIsRefreshing(false);
-        }
-      });
-
-    return () => {
-      isCancelled = true;
-    };
+  const loadData = useCallback(async () => {
+    try {
+      const [rows, count] = await Promise.all([
+        getNotifications({
+          page: 1,
+          limit: PAGE_SIZE,
+          filter,
+          packageName,
+          search: searchQuery,
+        }),
+        getUnreadCount(),
+      ]);
+      setNotifications(rows);
+      setUnreadCount(count);
+      setHasMore(rows.length === PAGE_SIZE);
+      setPage(1);
+    } catch (err) {
+      console.warn('Error loading notifications:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [filter, packageName, searchQuery]);
 
-  const refresh = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      const rows = await getNotifications({
+  // Initial load or filter change
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      getNotifications({
         page: 1,
         limit: PAGE_SIZE,
         filter,
         packageName,
         search: searchQuery,
+      }),
+      getUnreadCount(),
+    ])
+      .then(([rows, count]) => {
+        if (!cancelled) {
+          setNotifications(rows);
+          setUnreadCount(count);
+          setHasMore(rows.length === PAGE_SIZE);
+          setPage(1);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('Error loading notifications:', err);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       });
-      setNotifications(rows);
-      setHasMore(rows.length === PAGE_SIZE);
-      setPage(1);
-    } catch (e) {
-      console.warn('Error refreshing notifications:', e);
-    } finally {
-      setIsRefreshing(false);
-    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [filter, packageName, searchQuery]);
+
+  // Subscribe to centralized invalidation events across all screens
+  useEffect(() => {
+    const unsubscribe = notificationEvents.subscribe(() => {
+      loadData();
+    });
+    return unsubscribe;
+  }, [loadData]);
+
+  const refresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await loadData();
+    setIsRefreshing(false);
+  }, [loadData]);
 
   const loadMore = useCallback(async () => {
     if (isLoading || isRefreshing || !hasMore) return;
@@ -138,6 +159,8 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
 
           return [newItem, ...prev];
         });
+        setUnreadCount((c) => c + 1);
+        notificationEvents.notifyMutation();
       },
       onRemoved: ({ notificationKey, removedAt }) => {
         setNotifications((prev) =>
@@ -145,6 +168,7 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
             n.notification_key === notificationKey ? { ...n, removed_at: removedAt } : n
           )
         );
+        notificationEvents.notifyMutation();
       },
     });
 
@@ -154,6 +178,7 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
   }, [packageName]);
 
   const deleteItem = useCallback(async (notificationKey: string) => {
+    // Optimistic update
     setNotifications((prev) => prev.filter((n) => n.notification_key !== notificationKey));
     try {
       await deleteNotification(notificationKey);
@@ -164,11 +189,13 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
 
   const toggleRead = useCallback(async (notificationKey: string, currentlyRead: boolean) => {
     const nextReadState = currentlyRead ? 0 : 1;
+    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) =>
         n.notification_key === notificationKey ? { ...n, is_read: nextReadState } : n
       )
     );
+    setUnreadCount((c) => Math.max(0, currentlyRead ? c + 1 : c - 1));
     try {
       if (currentlyRead) {
         await markAsUnread(notificationKey);
@@ -181,7 +208,9 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
   }, []);
 
   const markAll = useCallback(async () => {
+    // Optimistic update
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
+    setUnreadCount(0);
     try {
       await markAllAsRead();
     } catch (e) {
@@ -190,7 +219,9 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
   }, []);
 
   const clearAll = useCallback(async () => {
+    // Optimistic update
     setNotifications([]);
+    setUnreadCount(0);
     try {
       await clearNotifications();
     } catch (e) {
@@ -200,6 +231,7 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
 
   return {
     notifications,
+    unreadCount,
     isLoading,
     isRefreshing,
     hasMore,

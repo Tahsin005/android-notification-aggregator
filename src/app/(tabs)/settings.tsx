@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,9 +12,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AmbientBackground } from '../../components/AmbientBackground';
 import { clearNotifications, getNotificationStats } from '../../database/repository';
 import { useNotificationPermission } from '../../hooks/useNotificationPermission';
 import { useTheme } from '../../hooks/useTheme';
+import { notificationEvents } from '../../services/notificationEvents';
 import { getRetentionSetting, saveRetentionSetting } from '../../services/retentionService';
 import { NotificationStats, RetentionPeriod } from '../../types/notification';
 
@@ -49,6 +51,14 @@ export default function SettingsScreen() {
       loadData();
     }, [loadData])
   );
+
+  // Subscribe to live mutation events across the app
+  useEffect(() => {
+    const unsubscribe = notificationEvents.subscribe(() => {
+      loadData();
+    });
+    return unsubscribe;
+  }, [loadData]);
 
   const handleSelectRetention = async (period: RetentionPeriod) => {
     setRetention(period);
@@ -91,23 +101,25 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <AmbientBackground />
 
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: 'rgba(255, 255, 255, 0.07)' }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>NOTIFICATION ACCESS</Text>
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textDim }]}>NOTIFICATION ACCESS</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
             <View style={styles.statusRow}>
               <View style={styles.statusLeft}>
                 <View
                   style={[
                     styles.statusIcon,
                     {
-                      backgroundColor: isGranted ? colors.successLight : colors.warningLight,
+                      backgroundColor: isGranted ? 'rgba(52, 211, 153, 0.12)' : 'rgba(251, 191, 36, 0.12)',
+                      borderColor: isGranted ? 'rgba(52, 211, 153, 0.25)' : 'rgba(251, 191, 36, 0.25)',
                     },
                   ]}
                 >
@@ -133,7 +145,10 @@ export default function SettingsScreen() {
             <TouchableOpacity
               style={[
                 styles.actionButton,
-                { backgroundColor: isGranted ? colors.surface : colors.primary },
+                {
+                  backgroundColor: isGranted ? colors.surface : colors.primary,
+                  borderColor: isGranted ? colors.border : colors.primary,
+                },
               ]}
               onPress={requestPermission}
               activeOpacity={0.8}
@@ -141,7 +156,7 @@ export default function SettingsScreen() {
               <Text
                 style={[
                   styles.actionButtonText,
-                  { color: isGranted ? colors.text : '#FFFFFF' },
+                  { color: isGranted ? colors.text : '#070A10' },
                 ]}
               >
                 {isGranted ? 'Manage Android Settings' : 'Enable Notification Access'}
@@ -149,7 +164,7 @@ export default function SettingsScreen() {
               <Ionicons
                 name="open-outline"
                 size={16}
-                color={isGranted ? colors.text : '#FFFFFF'}
+                color={isGranted ? colors.text : '#070A10'}
               />
             </TouchableOpacity>
           </View>
@@ -158,34 +173,34 @@ export default function SettingsScreen() {
 
         {stats && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>STATISTICS</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>STATISTICS</Text>
             <View style={styles.statsGrid}>
-              <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
                 <Text style={[styles.statNum, { color: colors.text }]}>
                   {stats.totalCount.toLocaleString()}
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>Total Stored</Text>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>Total Stored</Text>
               </View>
 
-              <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
                 <Text style={[styles.statNum, { color: colors.primary }]}>
                   {stats.unreadCount.toLocaleString()}
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>Unread</Text>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>Unread</Text>
               </View>
 
-              <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
                 <Text style={[styles.statNum, { color: colors.success }]}>
                   {stats.todayCount.toLocaleString()}
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>Today</Text>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>Today</Text>
               </View>
 
-              <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.statNum, { color: colors.text }]}>
+              <View style={[styles.statBox, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
+                <Text style={[styles.statNum, { color: colors.accent2 }]}>
                   {stats.appsCount.toLocaleString()}
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>Apps</Text>
+                <Text style={[styles.statLabel, { color: colors.textDim }]}>Apps</Text>
               </View>
             </View>
           </View>
@@ -193,8 +208,8 @@ export default function SettingsScreen() {
 
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>DATA RETENTION</Text>
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textDim }]}>DATA RETENTION</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
             {RETENTION_OPTIONS.map((opt, idx) => {
               const isSelected = retention === opt.key;
               const isLast = idx === RETENTION_OPTIONS.length - 1;
@@ -204,7 +219,7 @@ export default function SettingsScreen() {
                   key={opt.key}
                   style={[
                     styles.radioItem,
-                    !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+                    !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255, 255, 255, 0.06)' },
                   ]}
                   onPress={() => handleSelectRetention(opt.key)}
                   activeOpacity={0.7}
@@ -218,7 +233,7 @@ export default function SettingsScreen() {
                   <Ionicons
                     name={isSelected ? 'radio-button-on' : 'radio-button-off'}
                     size={22}
-                    color={isSelected ? colors.primary : colors.textMuted}
+                    color={isSelected ? colors.primary : colors.textDim}
                   />
                 </TouchableOpacity>
               );
@@ -228,8 +243,8 @@ export default function SettingsScreen() {
 
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>MAINTENANCE</Text>
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textDim }]}>MAINTENANCE</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
             <TouchableOpacity
               style={styles.clearRow}
               onPress={handleClearAll}
@@ -237,12 +252,14 @@ export default function SettingsScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.clearLeft}>
-                <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                <View style={[styles.clearIconBox, { backgroundColor: colors.dangerLight }]}>
+                  <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                </View>
                 <View>
                   <Text style={[styles.clearText, { color: colors.danger }]}>
                     Clear All Notifications
                   </Text>
-                  <Text style={[styles.clearSubtext, { color: colors.textMuted }]}>
+                  <Text style={[styles.clearSubtext, { color: colors.textDim }]}>
                     Permanently delete all stored notification records
                   </Text>
                 </View>
@@ -250,7 +267,7 @@ export default function SettingsScreen() {
               {isClearing ? (
                 <ActivityIndicator size="small" color={colors.danger} />
               ) : (
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                <Ionicons name="chevron-forward" size={17} color={colors.textDim} />
               )}
             </TouchableOpacity>
           </View>
@@ -258,15 +275,17 @@ export default function SettingsScreen() {
 
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>PRIVACY & ABOUT</Text>
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textDim }]}>PRIVACY & ABOUT</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderTopColor: colors.cardBorderTop }]}>
             <TouchableOpacity
               style={styles.navRow}
               onPress={() => router.push('/privacy')}
               activeOpacity={0.7}
             >
               <View style={styles.navRowLeft}>
-                <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
+                <View style={[styles.privacyIconBox, { backgroundColor: colors.primaryLight }]}>
+                  <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
+                </View>
                 <View>
                   <Text style={[styles.navRowTitle, { color: colors.text }]}>Privacy Guarantee</Text>
                   <Text style={[styles.navRowSubtitle, { color: colors.textMuted }]}>
@@ -274,12 +293,12 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Ionicons name="chevron-forward" size={17} color={colors.textDim} />
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={[styles.versionText, { color: colors.textMuted }]}>
+        <Text style={[styles.versionText, { color: colors.textDim }]}>
           Android Notification Aggregator • v1.0.0
         </Text>
       </ScrollView>
@@ -293,27 +312,28 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   content: {
     paddingHorizontal: 16,
     paddingVertical: 16,
+    paddingBottom: 130, // Generous padding to clear floating dock navigation
     gap: 20,
   },
   section: {
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 1.1,
     marginLeft: 4,
   },
   card: {
@@ -333,6 +353,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -342,9 +363,10 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 16,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   statusSubtitle: {
-    fontSize: 13,
+    fontSize: 12.5,
     marginTop: 2,
     lineHeight: 18,
   },
@@ -356,6 +378,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     height: 44,
     borderRadius: 12,
+    borderWidth: 1,
     gap: 8,
   },
   actionButtonText: {
@@ -379,8 +402,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 10.5,
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
   radioItem: {
     flexDirection: 'row',
@@ -413,6 +437,13 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
+  clearIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   clearText: {
     fontSize: 15,
     fontWeight: '600',
@@ -433,6 +464,13 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
+  privacyIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   navRowTitle: {
     fontSize: 15,
     fontWeight: '600',
@@ -443,7 +481,7 @@ const styles = StyleSheet.create({
   },
   versionText: {
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 11.5,
     marginTop: 8,
     marginBottom: 16,
   },

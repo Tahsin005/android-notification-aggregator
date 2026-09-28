@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { NotificationItem } from '../types/notification';
 import { formatRelativeTime } from '../utils/date';
-import { getAppColor, getAppInitials } from '../utils/appColor';
+import { resolveAppName } from '../utils/appInfo';
+import { AppIconBadge } from './AppIconBadge';
 
 interface NotificationCardProps {
   item: NotificationItem;
@@ -20,8 +21,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   onDelete,
 }) => {
   const { colors } = useTheme();
-  const appColor = getAppColor(item.package_name);
-  const initials = getAppInitials(item.app_name);
+  const displayName = resolveAppName(item.package_name, item.app_name);
   const isUnread = item.is_read === 0;
 
   return (
@@ -30,50 +30,60 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
         styles.card,
         {
           backgroundColor: colors.card,
-          borderColor: isUnread ? colors.primaryLight : colors.border,
+          borderColor: isUnread ? 'rgba(250, 204, 21, 0.32)' : colors.cardBorder,
+          borderTopColor: isUnread ? 'rgba(250, 204, 21, 0.55)' : colors.cardBorderTop,
         },
       ]}
       onPress={() => onPress(item)}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
     >
       <View style={styles.headerRow}>
         <View style={styles.appInfo}>
-          <View style={[styles.avatar, { backgroundColor: appColor.bg }]}>
-            <Text style={[styles.avatarText, { color: appColor.text }]}>{initials}</Text>
+          <AppIconBadge packageName={item.package_name} size={34} />
+          <View style={styles.appTitleColumn}>
+            <Text style={[styles.appName, { color: colors.text }]} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {item.package_name !== displayName && (
+              <Text style={[styles.packageSub, { color: colors.textDim }]} numberOfLines={1}>
+                {item.package_name}
+              </Text>
+            )}
           </View>
-          <Text style={[styles.appName, { color: colors.text }]} numberOfLines={1}>
-            {item.app_name}
-          </Text>
         </View>
 
         <View style={styles.metaRow}>
+          {isUnread && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}
           <Text style={[styles.timeText, { color: colors.textMuted }]}>
             {formatRelativeTime(item.timestamp)}
           </Text>
-          {onToggleRead && (
-            <TouchableOpacity
-              onPress={() => onToggleRead(item.notification_key, !isUnread)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.actionIconBtn}
-              accessibilityLabel={isUnread ? 'Mark as read' : 'Mark as unread'}
-            >
-              <Ionicons
-                name={isUnread ? 'mail-unread' : 'mail-outline'}
-                size={16}
-                color={isUnread ? colors.primary : colors.textMuted}
-              />
-            </TouchableOpacity>
-          )}
-          {onDelete && (
-            <TouchableOpacity
-              onPress={() => onDelete(item.notification_key)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={styles.actionIconBtn}
-              accessibilityLabel="Delete notification"
-            >
-              <Ionicons name="trash-outline" size={15} color={colors.textMuted} />
-            </TouchableOpacity>
-          )}
+
+          <View style={styles.actionGroup}>
+            {onToggleRead && (
+              <TouchableOpacity
+                onPress={() => onToggleRead(item.notification_key, !isUnread)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={[styles.actionIconBtn, { backgroundColor: colors.surface }]}
+                accessibilityLabel={isUnread ? 'Mark as read' : 'Mark as unread'}
+              >
+                <Ionicons
+                  name={isUnread ? 'mail-unread' : 'mail-outline'}
+                  size={15}
+                  color={isUnread ? colors.primary : colors.textMuted}
+                />
+              </TouchableOpacity>
+            )}
+            {onDelete && (
+              <TouchableOpacity
+                onPress={() => onDelete(item.notification_key)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={[styles.actionIconBtn, { backgroundColor: colors.surface }]}
+                accessibilityLabel="Delete notification"
+              >
+                <Ionicons name="trash-outline" size={15} color={colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
 
@@ -87,32 +97,31 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       ) : null}
 
       {item.text || item.big_text ? (
-        <Text
-          style={[styles.body, { color: colors.textMuted }]}
-          numberOfLines={2}
-        >
+        <Text style={[styles.body, { color: colors.textMuted }]} numberOfLines={2}>
           {item.text || item.big_text}
         </Text>
       ) : null}
 
       {(item.is_ongoing === 1 || item.removed_at != null || item.sub_text) && (
-        <View style={styles.footerRow}>
+        <View style={[styles.footerRow, { borderTopColor: 'rgba(255, 255, 255, 0.06)' }]}>
           {item.sub_text ? (
-            <Text style={[styles.subText, { color: colors.textMuted }]} numberOfLines={1}>
+            <Text style={[styles.subText, { color: colors.textDim }]} numberOfLines={1}>
               {item.sub_text}
             </Text>
-          ) : null}
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
 
           <View style={styles.tagsContainer}>
             {item.is_ongoing === 1 && (
-              <View style={[styles.tag, { backgroundColor: colors.surface }]}>
-                <Ionicons name="refresh-circle-outline" size={12} color={colors.textMuted} />
+              <View style={[styles.tag, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Ionicons name="sync-circle-outline" size={12} color={colors.textMuted} />
                 <Text style={[styles.tagText, { color: colors.textMuted }]}>Ongoing</Text>
               </View>
             )}
 
             {item.removed_at != null && (
-              <View style={[styles.tag, { backgroundColor: colors.surface }]}>
+              <View style={[styles.tag, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Ionicons name="checkmark-circle-outline" size={12} color={colors.textMuted} />
                 <Text style={[styles.tagText, { color: colors.textMuted }]}>Dismissed</Text>
               </View>
@@ -126,85 +135,92 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
+    padding: 15,
     marginHorizontal: 16,
     marginVertical: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 3,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   appInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     marginRight: 8,
+    gap: 10,
   },
-  avatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  avatarText: {
-    fontSize: 11,
-    fontWeight: '700',
+  appTitleColumn: {
+    flex: 1,
   },
   appName: {
-    fontSize: 13,
-    fontWeight: '600',
-    flexShrink: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  packageSub: {
+    fontSize: 11,
+    marginTop: 1,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   timeText: {
     fontSize: 12,
+    fontWeight: '500',
+  },
+  actionGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginLeft: 2,
   },
   actionIconBtn: {
-    padding: 4,
-    borderRadius: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  unreadDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   title: {
     fontSize: 15,
     lineHeight: 20,
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   body: {
-    fontSize: 14,
+    fontSize: 13.5,
     lineHeight: 19,
+    letterSpacing: -0.1,
   },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 6,
+    marginTop: 10,
+    paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(150, 150, 150, 0.15)',
   },
   subText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontStyle: 'italic',
     flex: 1,
     marginRight: 8,
@@ -217,13 +233,14 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
     gap: 4,
   },
   tagText: {
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: 10.5,
+    fontWeight: '600',
   },
 });

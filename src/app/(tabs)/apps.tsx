@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,8 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
 import { getAppsSummary } from '../../database/repository';
 import { AppNotificationSummary } from '../../types/notification';
-import { getAppColor, getAppInitials } from '../../utils/appColor';
+import { resolveAppName } from '../../utils/appInfo';
+import { AppIconBadge } from '../../components/AppIconBadge';
 import { EmptyState } from '../../components/EmptyState';
+import { AmbientBackground } from '../../components/AmbientBackground';
+import { notificationEvents } from '../../services/notificationEvents';
 
 export default function AppsScreen() {
   const { colors, isDark } = useTheme();
@@ -42,48 +45,61 @@ export default function AppsScreen() {
     }, [loadApps])
   );
 
+  // Subscribe to live mutation events
+  useEffect(() => {
+    const unsubscribe = notificationEvents.subscribe(() => {
+      loadApps();
+    });
+    return unsubscribe;
+  }, [loadApps]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await loadApps();
   };
 
   const handleAppPress = (app: AppNotificationSummary) => {
+    const cleanName = resolveAppName(app.package_name, app.app_name);
     router.navigate({
       pathname: '/',
-      params: { package: app.package_name, appName: app.app_name },
+      params: { package: app.package_name, appName: cleanName },
     });
   };
 
   const renderAppItem = ({ item }: { item: AppNotificationSummary }) => {
-    const appColor = getAppColor(item.package_name);
-    const initials = getAppInitials(item.app_name);
+    const cleanName = resolveAppName(item.package_name, item.app_name);
 
     return (
       <TouchableOpacity
-        style={[styles.appItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+        style={[
+          styles.appItem,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.cardBorder,
+            borderTopColor: colors.cardBorderTop,
+          },
+        ]}
         onPress={() => handleAppPress(item)}
-        activeOpacity={0.7}
+        activeOpacity={0.75}
       >
-        <View style={[styles.avatar, { backgroundColor: appColor.bg }]}>
-          <Text style={[styles.avatarText, { color: appColor.text }]}>{initials}</Text>
-        </View>
+        <AppIconBadge packageName={item.package_name} size={40} />
 
         <View style={styles.appInfo}>
           <Text style={[styles.appName, { color: colors.text }]} numberOfLines={1}>
-            {item.app_name}
+            {cleanName}
           </Text>
-          <Text style={[styles.packageName, { color: colors.textMuted }]} numberOfLines={1}>
+          <Text style={[styles.packageName, { color: colors.textDim }]} numberOfLines={1}>
             {item.package_name}
           </Text>
         </View>
 
         <View style={styles.rightContainer}>
-          <View style={[styles.countBadge, { backgroundColor: colors.primaryLight }]}>
+          <View style={[styles.countBadge, { backgroundColor: colors.primaryLight, borderColor: 'rgba(56, 189, 248, 0.25)' }]}>
             <Text style={[styles.countText, { color: colors.primary }]}>
               {item.count.toLocaleString()}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          <Ionicons name="chevron-forward" size={17} color={colors.textDim} />
         </View>
       </TouchableOpacity>
     );
@@ -92,10 +108,11 @@ export default function AppsScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <AmbientBackground />
 
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: 'rgba(255, 255, 255, 0.07)' }]}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Apps</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Applications</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
             {apps.length} {apps.length === 1 ? 'application' : 'applications'} archived
           </Text>
@@ -133,18 +150,18 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   headerSubtitle: {
     fontSize: 13,
-    marginTop: 2,
+    marginTop: 3,
   },
   loaderContainer: {
     flex: 1,
@@ -155,38 +172,34 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 8,
+    paddingBottom: 130, // Avoid floating dock overlap
+    gap: 9,
   },
   appItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: '700',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 2,
   },
   appInfo: {
     flex: 1,
+    marginLeft: 12,
     marginRight: 8,
   },
   appName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.2,
     marginBottom: 2,
   },
   packageName: {
-    fontSize: 12,
+    fontSize: 11.5,
   },
   rightContainer: {
     flexDirection: 'row',
@@ -197,9 +210,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    borderWidth: 1,
   },
   countText: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
   },
 });

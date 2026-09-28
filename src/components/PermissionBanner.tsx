@@ -11,35 +11,40 @@ export const PermissionBanner: React.FC<PermissionBannerProps> = ({ onEnablePres
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.cardBorder,
+          borderTopColor: colors.cardBorderTop,
+        },
+      ]}
+    >
       <View style={styles.header}>
-        <View style={[styles.iconBox, { backgroundColor: colors.warningLight }]}>
-          <Ionicons name="lock-open-outline" size={20} color={colors.warning} />
+        <View style={[styles.iconBox, { backgroundColor: 'rgba(251, 191, 36, 0.12)', borderColor: 'rgba(251, 191, 36, 0.28)' }]}>
+          <Ionicons name="lock-open-outline" size={18} color={colors.warning} />
         </View>
-        <Text style={[styles.title, { color: colors.text }]}>Archive your notifications</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Capture & Archive Notifications</Text>
       </View>
 
       <Text style={[styles.body, { color: colors.textMuted }]}>
-        Notification Aggregator captures and stores notifications from your Android apps locally so you can easily browse, search, and manage them anytime.
+        Notification Aggregator captures incoming notifications from your apps locally so you can browse, filter, search, and manage them anytime.
       </Text>
 
       <View style={styles.privacyNote}>
-        <Ionicons name="shield-checkmark-outline" size={14} color={colors.success} />
+        <Ionicons name="shield-checkmark" size={14} color={colors.success} />
         <Text style={[styles.privacyText, { color: colors.success }]}>
-          Your notification data strictly stays private on this device.
+          100% on-device. Your notifications never leave your phone.
         </Text>
       </View>
-
-      <Text style={[styles.syncNote, { color: colors.textMuted }]}>
-        Note: Android only makes notifications available from the moment Notification Access is enabled. Active notifications will be imported automatically.
-      </Text>
 
       <TouchableOpacity
         style={[styles.button, { backgroundColor: colors.primary }]}
         onPress={onEnablePress}
         activeOpacity={0.8}
       >
-        <Ionicons name="settings-outline" size={16} color="#FFFFFF" />
+        <Ionicons name="settings-outline" size={16} color="#070A10" />
         <Text style={styles.buttonText}>Enable Notification Access</Text>
       </TouchableOpacity>
     </View>
@@ -54,6 +59,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 3,
   },
   header: {
     flexDirection: 'row',
@@ -61,15 +71,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   body: {
     fontSize: 13,
@@ -85,23 +97,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  syncNote: {
-    fontSize: 11,
-    lineHeight: 16,
-    fontStyle: 'italic',
-  },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 42,
-    borderRadius: 10,
+    height: 44,
+    borderRadius: 12,
     gap: 8,
     marginTop: 4,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: '#070A10',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
