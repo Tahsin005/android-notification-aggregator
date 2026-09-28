@@ -10,7 +10,10 @@ import {
   RetentionPeriod,
 } from '../types/notification';
 
-export async function insertNotification(item: Omit<NotificationItem, 'id'>): Promise<void> {
+export async function insertNotification(
+  item: Omit<NotificationItem, 'id'>,
+  triggerMutation = true
+): Promise<void> {
   const cleanAppName = resolveAppName(item.package_name, item.app_name);
   const db = await getDatabase();
   await db.runAsync(
@@ -54,7 +57,9 @@ export async function insertNotification(item: Omit<NotificationItem, 'id'>): Pr
       item.created_at || Date.now(),
     ]
   );
-  notificationEvents.notifyMutation();
+  if (triggerMutation) {
+    notificationEvents.notifyMutation();
+  }
 }
 
 export async function getNotifications(params: NotificationQueryParams = {}): Promise<NotificationItem[]> {

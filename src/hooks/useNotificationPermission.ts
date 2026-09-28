@@ -52,6 +52,9 @@ export function useNotificationPermission() {
         if (isMounted) {
           setIsGranted(granted);
           setIsChecking(false);
+          if (granted) {
+            syncActiveNotifications().catch(console.warn);
+          }
         }
       })
       .catch(() => {

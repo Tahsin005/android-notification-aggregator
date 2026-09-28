@@ -4,6 +4,7 @@ import {
   deleteNotification,
   getNotifications,
   getUnreadCount,
+  insertNotification,
   markAllAsRead,
   markAsRead,
   markAsUnread,
@@ -126,27 +127,33 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
   useEffect(() => {
     const sub = subscribeToNotificationEvents({
       onPosted: (item) => {
+        const newItem: NotificationItem = {
+          notification_key: item.notificationKey,
+          package_name: item.packageName,
+          app_name: item.appName,
+          title: item.title,
+          text: item.text,
+          big_text: item.bigText,
+          sub_text: item.subText,
+          timestamp: item.timestamp,
+          category: item.category,
+          group_key: item.groupKey,
+          channel_id: item.channelId,
+          is_ongoing: item.isOngoing ? 1 : 0,
+          is_clearable: item.isClearable ? 1 : 0,
+          is_read: 0,
+          intercepted_in_dnd: item.interceptedInDnd ?? 0,
+          removed_at: item.removedAt,
+          created_at: item.createdAt || Date.now(),
+        };
+
+        // Guarantee persistence in SQLite from JS side
+        insertNotification(newItem, false).catch((err) =>
+          console.warn('Backup insertNotification error:', err)
+        );
+
         setNotifications((prev) => {
           const index = prev.findIndex((n) => n.notification_key === item.notificationKey);
-          const newItem: NotificationItem = {
-            notification_key: item.notificationKey,
-            package_name: item.packageName,
-            app_name: item.appName,
-            title: item.title,
-            text: item.text,
-            big_text: item.bigText,
-            sub_text: item.subText,
-            timestamp: item.timestamp,
-            category: item.category,
-            group_key: item.groupKey,
-            channel_id: item.channelId,
-            is_ongoing: item.isOngoing ? 1 : 0,
-            is_clearable: item.isClearable ? 1 : 0,
-            is_read: 0,
-            intercepted_in_dnd: item.interceptedInDnd ?? 0,
-            removed_at: item.removedAt,
-            created_at: item.createdAt,
-          };
 
           if (index >= 0) {
             const copy = [...prev];

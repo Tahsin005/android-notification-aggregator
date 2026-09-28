@@ -49,8 +49,9 @@ object NotificationDbHelper {
         try {
           db.enableWriteAheadLogging()
           db.execSQL("PRAGMA busy_timeout = 5000;")
+          db.execSQL("PRAGMA synchronous = NORMAL;")
         } catch (e: Exception) {
-          Log.w(TAG, "Could not set WAL or busy_timeout on DB: ${e.message}")
+          Log.w(TAG, "Could not set WAL, busy_timeout, or synchronous on DB: ${e.message}")
         }
         createTablesIfNotExist(db)
         dbInstance = db
@@ -152,7 +153,7 @@ object NotificationDbHelper {
         statement.close()
       }
     } catch (e: Exception) {
-      Log.e(TAG, "Failed to insert or update notification: ${e.message}")
+      Log.e(TAG, "Failed to insert or update notification: ${e.message}", e)
       false
     }
   }

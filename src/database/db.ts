@@ -13,53 +13,64 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   }
 
   initPromise = (async () => {
-    const db = await SQLite.openDatabaseAsync('notifications.db');
-
-    await db.execAsync(`
-      PRAGMA busy_timeout = 5000;
-      PRAGMA journal_mode = WAL;
-
-      CREATE TABLE IF NOT EXISTS notifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        notification_key TEXT UNIQUE NOT NULL,
-        package_name TEXT NOT NULL,
-        app_name TEXT NOT NULL,
-        title TEXT,
-        text TEXT,
-        big_text TEXT,
-        sub_text TEXT,
-        timestamp INTEGER NOT NULL,
-        category TEXT,
-        group_key TEXT,
-        channel_id TEXT,
-        is_ongoing INTEGER DEFAULT 0,
-        is_clearable INTEGER DEFAULT 1,
-        is_read INTEGER DEFAULT 0,
-        intercepted_in_dnd INTEGER DEFAULT 0,
-        removed_at INTEGER,
-        created_at INTEGER NOT NULL
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_notifications_timestamp ON notifications (timestamp DESC);
-      CREATE INDEX IF NOT EXISTS idx_notifications_package ON notifications (package_name);
-      CREATE INDEX IF NOT EXISTS idx_notifications_key ON notifications (notification_key);
-      CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications (is_read);
-      CREATE INDEX IF NOT EXISTS idx_notifications_dnd ON notifications (intercepted_in_dnd);
-
-      CREATE TABLE IF NOT EXISTS app_settings (
-        key TEXT PRIMARY KEY NOT NULL,
-        value TEXT NOT NULL
-      );
-    `);
-
     try {
-      await db.execAsync('ALTER TABLE notifications ADD COLUMN intercepted_in_dnd INTEGER DEFAULT 0;');
-    } catch {
-      // Column already exists
-    }
+      const db = await SQLite.openDatabaseAsync('notifications.db');
 
-    dbInstance = db;
-    return db;
+      await db.execAsync(`
+        PRAGMA busy_timeout = 5000;
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+
+        CREATE TABLE IF NOT EXISTS notifications (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          notification_key TEXT UNIQUE NOT NULL,
+          package_name TEXT NOT NULL,
+          app_name TEXT NOT NULL,
+          title TEXT,
+          text TEXT,
+          big_text TEXT,
+          sub_text TEXT,
+          timestamp INTEGER NOT NULL,
+          category TEXT,
+          group_key TEXT,
+          channel_id TEXT,
+          is_ongoing INTEGER DEFAULT 0,
+          is_clearable INTEGER DEFAULT 1,
+          is_read INTEGER DEFAULT 0,
+          intercepted_in_dnd INTEGER DEFAULT 0,
+          removed_at INTEGER,
+          created_at INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY NOT NULL,
+          value TEXT NOT NULL
+        );
+      `);
+
+      // Safe migration: ensure intercepted_in_dnd column exists before creating index on it
+      try {
+        await db.execAsync('ALTER TABLE notifications ADD COLUMN intercepted_in_dnd INTEGER DEFAULT 0;');
+      } catch {
+        // Column already exists
+      }
+
+      // Safe index creation (now guaranteed to succeed because column definitely exists)
+      await db.execAsync(`
+        CREATE INDEX IF NOT EXISTS idx_notifications_timestamp ON notifications (timestamp DESC);
+        CREATE INDEX IF NOT EXISTS idx_notifications_package ON notifications (package_name);
+        CREATE INDEX IF NOT EXISTS idx_notifications_key ON notifications (notification_key);
+        CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications (is_read);
+        CREATE INDEX IF NOT EXISTS idx_notifications_dnd ON notifications (intercepted_in_dnd);
+      `);
+
+      dbInstance = db;
+      return db;
+    } catch (error) {
+      initPromise = null;
+      console.error('Failed to initialize SQLite database:', error);
+      throw error;
+    }
   })();
 
   return initPromise;
