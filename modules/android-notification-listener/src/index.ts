@@ -1,5 +1,11 @@
 import NotificationListenerModule from './NotificationListenerModule';
-import { NativeNotificationItem, NotificationRemovedEvent } from './NotificationListener.types';
+import {
+  NativeNotificationItem,
+  NotificationRemovedEvent,
+  NativeDbNotificationItem,
+  NativeAppSummary,
+  NativeNotificationStats,
+} from './NotificationListener.types';
 
 export async function isPermissionGranted(): Promise<boolean> {
   return await NotificationListenerModule.isPermissionGranted();
@@ -63,6 +69,44 @@ export async function setDndBlockedPackages(packages: string[]): Promise<boolean
 
 export async function toggleDndPackage(packageName: string): Promise<boolean> {
   return await NotificationListenerModule.toggleDndPackage(packageName);
+}
+
+export async function getNotifications(params?: {
+  limit?: number;
+  offset?: number;
+  filter?: string;
+  packageName?: string;
+  search?: string;
+}): Promise<NativeDbNotificationItem[]> {
+  return await NotificationListenerModule.getNotifications(params);
+}
+
+export async function getAppsSummary(): Promise<NativeAppSummary[]> {
+  return await NotificationListenerModule.getAppsSummary();
+}
+
+export async function getUnreadCount(): Promise<number> {
+  return await NotificationListenerModule.getUnreadCount();
+}
+
+export async function getNotificationStats(): Promise<NativeNotificationStats> {
+  return await NotificationListenerModule.getNotificationStats();
+}
+
+export async function getSetting(key: string, defaultValue: string): Promise<string> {
+  return await NotificationListenerModule.getSetting(key, defaultValue);
+}
+
+export async function setSetting(key: string, value: string): Promise<boolean> {
+  return await NotificationListenerModule.setSetting(key, value);
+}
+
+export async function deleteExpiredNotifications(retention: string): Promise<number> {
+  return await NotificationListenerModule.deleteExpiredNotifications(retention);
+}
+
+export async function insertNotification(item: Record<string, any>): Promise<boolean> {
+  return await NotificationListenerModule.insertNotification(item);
 }
 
 export function addNotificationPostedListener(

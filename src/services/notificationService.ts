@@ -1,5 +1,4 @@
 import * as NativeListener from '@/modules/android-notification-listener';
-import { insertNotification } from '../database/repository';
 
 export async function checkNotificationPermission(): Promise<boolean> {
   try {
@@ -22,31 +21,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 export async function syncActiveNotifications(): Promise<number> {
   try {
     const active = await NativeListener.getActiveNotifications();
-    let imported = 0;
-    for (const item of active) {
-      if (item && item.notificationKey) {
-        await insertNotification({
-          notification_key: item.notificationKey,
-          package_name: item.packageName,
-          app_name: item.appName,
-          title: item.title,
-          text: item.text,
-          big_text: item.bigText,
-          sub_text: item.subText,
-          timestamp: item.timestamp,
-          category: item.category,
-          group_key: item.groupKey,
-          channel_id: item.channelId,
-          is_ongoing: item.isOngoing ? 1 : 0,
-          is_clearable: item.isClearable ? 1 : 0,
-          is_read: 0,
-          removed_at: item.removedAt,
-          created_at: item.createdAt || Date.now(),
-        });
-        imported++;
-      }
-    }
-    return imported;
+    return active ? active.length : 0;
   } catch (e) {
     console.warn('Error syncing active notifications:', e);
     return 0;

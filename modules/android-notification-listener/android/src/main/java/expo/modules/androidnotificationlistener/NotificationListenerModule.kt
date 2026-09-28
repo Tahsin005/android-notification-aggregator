@@ -273,5 +273,42 @@ class NotificationListenerModule : Module() {
     AsyncFunction("toggleDndPackage") { packageName: String ->
       DndManager.toggleBlockedPackage(context, packageName)
     }
+
+    AsyncFunction("getNotifications") { params: Map<String, Any?>? ->
+      val limit = (params?.get("limit") as? Number)?.toInt() ?: 30
+      val offset = (params?.get("offset") as? Number)?.toInt() ?: 0
+      val filter = params?.get("filter") as? String
+      val packageName = params?.get("packageName") as? String
+      val search = params?.get("search") as? String
+      NotificationDbHelper.getNotifications(context, limit, offset, filter, packageName, search)
+    }
+
+    AsyncFunction("getAppsSummary") {
+      NotificationDbHelper.getAppsSummary(context)
+    }
+
+    AsyncFunction("getUnreadCount") {
+      NotificationDbHelper.getUnreadCount(context)
+    }
+
+    AsyncFunction("getNotificationStats") {
+      NotificationDbHelper.getNotificationStats(context)
+    }
+
+    AsyncFunction("getSetting") { key: String, defaultValue: String ->
+      NotificationDbHelper.getSetting(context, key, defaultValue)
+    }
+
+    AsyncFunction("setSetting") { key: String, value: String ->
+      NotificationDbHelper.setSetting(context, key, value)
+    }
+
+    AsyncFunction("deleteExpiredNotifications") { retention: String ->
+      NotificationDbHelper.deleteExpiredNotifications(context, retention)
+    }
+
+    AsyncFunction("insertNotification") { item: Map<String, Any?> ->
+      NotificationDbHelper.insertNotificationFromMap(context, item)
+    }
   }
 }

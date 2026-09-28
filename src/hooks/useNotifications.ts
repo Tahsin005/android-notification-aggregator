@@ -4,7 +4,6 @@ import {
   deleteNotification,
   getNotifications,
   getUnreadCount,
-  insertNotification,
   markAllAsRead,
   markAsRead,
   markAsUnread,
@@ -146,11 +145,6 @@ export function useNotifications({ filter, packageName, searchQuery }: UseNotifi
           removed_at: item.removedAt,
           created_at: item.createdAt || Date.now(),
         };
-
-        // Guarantee persistence in SQLite from JS side
-        insertNotification(newItem, false).catch((err) =>
-          console.warn('Backup insertNotification error:', err)
-        );
 
         setNotifications((prev) => {
           const index = prev.findIndex((n) => n.notification_key === item.notificationKey);

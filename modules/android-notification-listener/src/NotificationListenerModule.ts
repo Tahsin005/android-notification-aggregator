@@ -1,5 +1,11 @@
 import { NativeModule, requireOptionalNativeModule } from 'expo';
-import { NativeNotificationItem, NotificationRemovedEvent } from './NotificationListener.types';
+import {
+  NativeNotificationItem,
+  NotificationRemovedEvent,
+  NativeDbNotificationItem,
+  NativeAppSummary,
+  NativeNotificationStats,
+} from './NotificationListener.types';
 
 declare class NotificationListenerNativeModule extends NativeModule<{
   onNotificationPosted: (notification: NativeNotificationItem) => void;
@@ -21,6 +27,20 @@ declare class NotificationListenerNativeModule extends NativeModule<{
   getDndBlockedPackages(): Promise<string[]>;
   setDndBlockedPackages(packages: string[]): Promise<boolean>;
   toggleDndPackage(packageName: string): Promise<boolean>;
+  getNotifications(params?: {
+    limit?: number;
+    offset?: number;
+    filter?: string;
+    packageName?: string;
+    search?: string;
+  }): Promise<NativeDbNotificationItem[]>;
+  getAppsSummary(): Promise<NativeAppSummary[]>;
+  getUnreadCount(): Promise<number>;
+  getNotificationStats(): Promise<NativeNotificationStats>;
+  getSetting(key: string, defaultValue: string): Promise<string>;
+  setSetting(key: string, value: string): Promise<boolean>;
+  deleteExpiredNotifications(retention: string): Promise<number>;
+  insertNotification(item: Record<string, any>): Promise<boolean>;
 }
 
 const nativeModule = requireOptionalNativeModule<NotificationListenerNativeModule>('NotificationListener');
@@ -78,6 +98,30 @@ const fallbackModule = {
     return true;
   },
   async toggleDndPackage(_packageName: string): Promise<boolean> {
+    return true;
+  },
+  async getNotifications(_params?: any): Promise<NativeDbNotificationItem[]> {
+    return [];
+  },
+  async getAppsSummary(): Promise<NativeAppSummary[]> {
+    return [];
+  },
+  async getUnreadCount(): Promise<number> {
+    return 0;
+  },
+  async getNotificationStats(): Promise<NativeNotificationStats> {
+    return { totalCount: 0, unreadCount: 0, todayCount: 0, appsCount: 0 };
+  },
+  async getSetting(_key: string, defaultValue: string): Promise<string> {
+    return defaultValue;
+  },
+  async setSetting(_key: string, _value: string): Promise<boolean> {
+    return true;
+  },
+  async deleteExpiredNotifications(_retention: string): Promise<number> {
+    return 0;
+  },
+  async insertNotification(_item: Record<string, any>): Promise<boolean> {
     return true;
   },
   addListener(_eventName: string, _listener: any) {
