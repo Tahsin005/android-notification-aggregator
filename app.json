@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "android-notification-aggregator",
+    "name": "Notification Aggregator",
     "slug": "android-notification-aggregator",
     "version": "1.0.0",
     "orientation": "portrait",

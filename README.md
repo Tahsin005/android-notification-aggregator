@@ -1,56 +1,55 @@
-# Welcome to your Expo app 👋
+# Notification Aggregator 🔕📲
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A private, local-first Android notification manager, archive, and quiet vault built with React Native, Expo, and native Android Kotlin services.
 
-## Get started
+Notification Aggregator captures, categorizes, and securely archives all your device notifications directly on-device so you never lose an important message, OTP, or notification alert—even if it was dismissed or deleted from the Android system shade.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## ✨ Features
 
-2. Start the app
+- **📥 Background Notification Capture**: Runs continuously as an Android `NotificationListenerService` to capture notifications in real-time, even when the React Native app is closed or killed.
+- **🌙 Quiet Vault (Do Not Disturb Interception)**: Silence distracting apps on your terms. When enabled, notifications from selected apps (or all clearable apps) are automatically dismissed from your status bar and vaulted quietly in the app.
+- **⚡ Single-Engine Native SQLite Architecture**: High-performance native SQLite database with automatic self-healing and recovery—guaranteeing zero concurrency corruption and instant queries across thousands of records.
+- **🔍 Powerful Filtering & Instant Search**:
+  - Filter by **All**, **Unread**, **DND Vault**, **Today**, and **Yesterday**.
+  - Group and browse notifications by application with notification counts.
+  - Live full-text search across app titles, sender names, and notification bodies.
+- **🧊 Liquid Glass Aesthetic**: Crafted with Apple-inspired Liquid Glass design principles:
+  - Ultra-dark palette (`#060709` deep obsidian).
+  - Floating dock navigation with frosted glass translucency and micro-animations.
+  - Solar gold ambient glow with subtle radial light effects.
+  - High-density information hierarchy without clutter.
+- **🔒 100% On-Device Privacy**: Your notifications never leave your device. Zero external network requests, zero telemetry, zero analytics, and zero cloud synchronization.
+- **⏱️ Configurable Data Retention**: Built-in automated retention policies (7 days, 30 days, or Forever) to prevent storage bloat.
+- **🚀 Seamless App Launching**: Tap any notification card or app group to open the originating application directly.
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 🏗️ Architecture & Technology Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **Framework**: [Expo SDK 57](https://expo.dev) / React Native 0.86 with New Architecture & React Compiler.
+- **Routing**: [Expo Router](https://docs.expo.dev/router/introduction) (file-based navigation with tab dock and modals).
+- **Native Android Module**:
+  - `NotificationAggregatorService.kt`: Native `NotificationListenerService` capturing status bar events.
+  - `NotificationDbHelper.kt`: Native SQLite engine with connection synchronization, WAL mode, and auto-repair.
+  - `DndManager.kt`: Shared preferences manager for quiet vault interception policies.
+  - `NotificationListenerModule.kt`: Expo Kotlin Module bridge exposing events and asynchronous query methods to JavaScript.
+- **State & Reactivity**: Centralized custom EventEmitter for cross-tab mutations, optimistic UI updates, and real-time badge counts.
+- **Animations**: `react-native-reanimated` with spring physics and worklets.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 🛡️ Permissions & Security
 
-When you're ready, run:
+| Permission | Purpose |
+| :--- | :--- |
+| `BIND_NOTIFICATION_LISTENER_SERVICE` | Required by Android OS to capture and dismiss status bar notifications. |
+| `QUERY_ALL_PACKAGES` | Resolves app names and launches target apps when notifications are tapped. |
+| `INTERNET` | Excluded from network usage; all operations and SQLite databases are strictly local. |
 
-```bash
-npm run reset-project
-```
+---
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 📄 License
 
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+MIT License. Designed and developed with care.
