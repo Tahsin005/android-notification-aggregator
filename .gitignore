@@ -43,4 +43,5 @@ example
 /android
 modules/**/build/
 modules/**/.gradle/
+*.apk
 
