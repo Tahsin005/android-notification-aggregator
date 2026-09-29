@@ -18,9 +18,13 @@ export const HourlyBarChart: React.FC<HourlyBarChartProps> = ({ hourly }) => {
     { hour: 0, count: 0 }
   );
 
-  const [selectedHour, setSelectedHour] = useState<number | null>(
-    peakItem.count > 0 ? peakItem.hour : null
-  );
+  const [selectedHour, setSelectedHour] = useState<number | null>(null);
+  const [prevHourly, setPrevHourly] = useState(hourly);
+
+  if (prevHourly !== hourly) {
+    setPrevHourly(hourly);
+    setSelectedHour(null);
+  }
 
   const formatHourLabel = (hour: number) => {
     if (hour === 0) return '12 AM';

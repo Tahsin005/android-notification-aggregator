@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getAnalyticsData } from '../database/repository';
 import { notificationEvents } from '../services/notificationEvents';
 import { AnalyticsData, AnalyticsTimeRange } from '../types/notification';
@@ -18,39 +18,41 @@ export function useAnalytics(initialRange: AnalyticsTimeRange = 'today') {
   const [data, setData] = useState<AnalyticsData>(INITIAL_DATA);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const requestIdRef = useRef(0);
 
   const loadData = useCallback(async (range: AnalyticsTimeRange) => {
+    const currentId = ++requestIdRef.current;
     try {
       const result = await getAnalyticsData(range);
-      setData(result);
+      if (currentId === requestIdRef.current) {
+        setData(result);
+      }
     } catch (e) {
       console.warn('Failed to load analytics data:', e);
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      if (currentId === requestIdRef.current) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
     }
   }, []);
 
   // Fetch when timeRange changes
   useEffect(() => {
-    let cancelled = false;
+    const currentId = ++requestIdRef.current;
     getAnalyticsData(timeRange)
       .then((result) => {
-        if (!cancelled) {
+        if (currentId === requestIdRef.current) {
           setData(result);
           setIsLoading(false);
         }
       })
       .catch((err) => {
         console.warn('Failed to load analytics data:', err);
-        if (!cancelled) {
+        if (currentId === requestIdRef.current) {
           setIsLoading(false);
         }
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [timeRange]);
 
   // Subscribe to live notification mutations

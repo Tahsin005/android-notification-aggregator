@@ -58,7 +58,7 @@ export const AppVolumeList: React.FC<AppVolumeListProps> = ({ topApps, totalCoun
 
           return (
             <TouchableOpacity
-              key={app.package_name}
+              key={`${app.package_name}-${app.app_name}-${index}`}
               style={styles.appRow}
               onPress={() => handleAppPress(app)}
               activeOpacity={0.7}
