@@ -41,6 +41,8 @@ export const BiometricProvider: React.FC<{ children: React.ReactNode }> = ({
   const isLockEnabledRef = useRef<boolean>(false);
   const autoLockTimeoutRef = useRef<AutoLockTimeout>(0);
   const isAuthenticatingRef = useRef<boolean>(false);
+  const initTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     isLockEnabledRef.current = isLockEnabled;
@@ -56,27 +58,36 @@ export const BiometricProvider: React.FC<{ children: React.ReactNode }> = ({
   const unlock = useCallback(async (): Promise<boolean> => {
     if (isAuthenticatingRef.current) return false;
 
+    isAuthenticatingRef.current = true;
     setIsAuthenticating(true);
     setLastError(null);
 
-    const result = await authenticateWithBiometrics(
-      'Unlock Notification Vault'
-    );
+    try {
+      const result = await authenticateWithBiometrics(
+        'Unlock Notification Vault'
+      );
 
-    setIsAuthenticating(false);
-
-    if (result.success) {
-      setIsLocked(false);
-      setLastError(null);
-      return true;
-    } else {
-      setLastError(result.error || 'Authentication cancelled or failed');
-      return false;
+      if (result.success) {
+        setIsLocked(false);
+        setLastError(null);
+        return true;
+      } else {
+        setLastError(result.error || 'Authentication cancelled or failed');
+        return false;
+      }
+    } finally {
+      lastBackgroundTime.current = 0;
+      setTimeout(() => {
+        isAuthenticatingRef.current = false;
+        setIsAuthenticating(false);
+      }, 200);
     }
   }, []);
 
   // Initialize settings and initial lock state
   useEffect(() => {
+    let isMounted = true;
+
     async function init() {
       const [caps, enabled, timeout] = await Promise.all([
         getBiometricCapabilities(),
@@ -84,37 +95,64 @@ export const BiometricProvider: React.FC<{ children: React.ReactNode }> = ({
         getAutoLockTimeout(),
       ]);
 
+      if (!isMounted) return;
+
       setCapabilities(caps);
       setIsLockEnabled(enabled);
       setAutoLockTimeoutState(timeout);
 
       if (enabled) {
         setIsLocked(true);
+        if (initTimerRef.current) {
+          clearTimeout(initTimerRef.current);
+        }
         // Automatic authentication prompt on launch
-        setTimeout(() => {
-          unlock();
+        initTimerRef.current = setTimeout(() => {
+          if (isMounted) {
+            unlock();
+          }
         }, 150);
       }
     }
 
     init();
+
+    return () => {
+      isMounted = false;
+      if (initTimerRef.current) {
+        clearTimeout(initTimerRef.current);
+      }
+    };
   }, [unlock]);
 
   // AppState listener for auto-lock on background resume
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState.match(/inactive|background/)) {
+      // Ignore transitions while biometric prompt is actively presenting
+      if (isAuthenticatingRef.current) {
+        return;
+      }
+
+      if (nextAppState === 'background') {
         lastBackgroundTime.current = Date.now();
       } else if (nextAppState === 'active') {
         if (!isLockEnabledRef.current) return;
 
-        const elapsed = Date.now() - lastBackgroundTime.current;
+        const bgTime = lastBackgroundTime.current;
+        if (bgTime === 0) return;
+
+        const elapsed = Date.now() - bgTime;
         const timeout = autoLockTimeoutRef.current;
 
-        // If app was sent to background and elapsed time >= timeout duration
-        if (lastBackgroundTime.current > 0 && elapsed >= timeout) {
+        // Reset so completed resume doesn't re-trigger
+        lastBackgroundTime.current = 0;
+
+        if (elapsed >= timeout) {
           setIsLocked(true);
-          setTimeout(() => {
+          if (resumeTimerRef.current) {
+            clearTimeout(resumeTimerRef.current);
+          }
+          resumeTimerRef.current = setTimeout(() => {
             unlock();
           }, 150);
         }
@@ -127,6 +165,9 @@ export const BiometricProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     return () => {
       subscription.remove();
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current);
+      }
     };
   }, [unlock]);
 
@@ -137,19 +178,28 @@ export const BiometricProvider: React.FC<{ children: React.ReactNode }> = ({
         ? 'Verify identity to enable Biometric Lock'
         : 'Verify identity to disable Biometric Lock';
 
+      isAuthenticatingRef.current = true;
       setIsAuthenticating(true);
-      const result = await authenticateWithBiometrics(prompt);
-      setIsAuthenticating(false);
 
-      if (result.success) {
-        await setBiometricLockEnabled(enable);
-        setIsLockEnabled(enable);
-        if (!enable) {
-          setIsLocked(false);
+      try {
+        const result = await authenticateWithBiometrics(prompt);
+
+        if (result.success) {
+          await setBiometricLockEnabled(enable);
+          setIsLockEnabled(enable);
+          if (!enable) {
+            setIsLocked(false);
+          }
+          return true;
+        } else {
+          return false;
         }
-        return true;
-      } else {
-        return false;
+      } finally {
+        lastBackgroundTime.current = 0;
+        setTimeout(() => {
+          isAuthenticatingRef.current = false;
+          setIsAuthenticating(false);
+        }, 200);
       }
     },
     []
