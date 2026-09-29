@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { applyRetentionPolicy } from '../services/retentionService';
+import { BiometricProvider } from '../components/security/BiometricProvider';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -17,16 +18,18 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="privacy"
-          options={{
-            headerShown: false,
-            presentation: 'modal',
-          }}
-        />
-      </Stack>
+      <BiometricProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="privacy"
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+            }}
+          />
+        </Stack>
+      </BiometricProvider>
     </SafeAreaProvider>
   );
 }
