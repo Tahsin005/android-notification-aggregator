@@ -35,6 +35,11 @@ export const FloatingDock: React.FC<FloatingDockProps> = ({ state, navigation })
       inactive: 'grid-outline',
       label: 'Apps',
     },
+    stats: {
+      active: 'stats-chart',
+      inactive: 'stats-chart-outline',
+      label: 'Stats',
+    },
     settings: {
       active: 'settings',
       inactive: 'settings-outline',

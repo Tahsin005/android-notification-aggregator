@@ -310,5 +310,9 @@ class NotificationListenerModule : Module() {
     AsyncFunction("insertNotification") { item: Map<String, Any?> ->
       NotificationDbHelper.insertNotificationFromMap(context, item)
     }
+
+    AsyncFunction("getAnalyticsData") { sinceTimestamp: Double ->
+      NotificationDbHelper.getAnalyticsData(context, sinceTimestamp.toLong())
+    }
   }
 }

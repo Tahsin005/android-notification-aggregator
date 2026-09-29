@@ -49,3 +49,26 @@ export interface NotificationGroupSection {
   title: string;
   data: NotificationItem[];
 }
+
+export type AnalyticsTimeRange = 'today' | '7d' | '30d' | 'all';
+
+export interface HourlyStatItem {
+  hour: number; // 0..23
+  count: number;
+}
+
+export interface DayOfWeekStatItem {
+  day: number; // 0..6 (0=Sun, 1=Mon, ..., 6=Sat)
+  count: number;
+}
+
+export interface AnalyticsData {
+  totalCount: number;
+  unreadCount: number;
+  dndCount: number;
+  appsCount: number;
+  topApps: AppNotificationSummary[];
+  hourly: HourlyStatItem[];
+  dayOfWeek: DayOfWeekStatItem[];
+}
+

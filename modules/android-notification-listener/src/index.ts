@@ -109,6 +109,10 @@ export async function insertNotification(item: Record<string, any>): Promise<boo
   return await NotificationListenerModule.insertNotification(item);
 }
 
+export async function getAnalyticsData(sinceTimestamp: number): Promise<import('./NotificationListener.types').NativeAnalyticsData> {
+  return await NotificationListenerModule.getAnalyticsData(sinceTimestamp);
+}
+
 export function addNotificationPostedListener(
   listener: (notification: NativeNotificationItem) => void
 ) {

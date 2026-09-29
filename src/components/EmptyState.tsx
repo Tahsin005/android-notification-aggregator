@@ -3,14 +3,16 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 
-type EmptyStateType = 'no-permission' | 'no-notifications' | 'no-search-results' | 'no-apps';
+type EmptyStateType = 'no-permission' | 'no-notifications' | 'no-search-results' | 'no-apps' | 'no-stats';
 
 interface EmptyStateProps {
   type: EmptyStateType;
+  title?: string;
+  description?: string;
   onPressAction?: () => void;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ type, onPressAction }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ type, title, description, onPressAction }) => {
   const { colors } = useTheme();
 
   const config = {
@@ -44,6 +46,13 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ type, onPressAction }) =
       description: 'Applications will appear here automatically as soon as they post their first notification.',
       buttonLabel: undefined,
     },
+    'no-stats': {
+      icon: 'stats-chart-outline' as const,
+      iconColor: colors.primary,
+      title: 'No Data in this Window',
+      description: 'Notifications received during this period will appear here with activity charts and source rankings.',
+      buttonLabel: undefined,
+    },
   }[type];
 
   return (
@@ -60,8 +69,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ type, onPressAction }) =
       >
         <Ionicons name={config.icon} size={32} color={config.iconColor} />
       </View>
-      <Text style={[styles.title, { color: colors.text }]}>{config.title}</Text>
-      <Text style={[styles.description, { color: colors.textMuted }]}>{config.description}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{title || config.title}</Text>
+      <Text style={[styles.description, { color: colors.textMuted }]}>{description || config.description}</Text>
 
       {config.buttonLabel && onPressAction ? (
         <TouchableOpacity
