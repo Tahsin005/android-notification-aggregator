@@ -164,3 +164,38 @@ export async function getSetting(key: string, defaultValue: string): Promise<str
 export async function setSetting(key: string, value: string): Promise<void> {
   await NativeListener.setSetting(key, value);
 }
+
+export async function getAnalyticsData(timeRange: import('../types/notification').AnalyticsTimeRange): Promise<import('../types/notification').AnalyticsData> {
+  let sinceTimestamp = 0;
+  const now = Date.now();
+
+  if (timeRange === 'today') {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    sinceTimestamp = today.getTime();
+  } else if (timeRange === '7d') {
+    sinceTimestamp = now - 7 * 24 * 60 * 60 * 1000;
+  } else if (timeRange === '30d') {
+    sinceTimestamp = now - 30 * 24 * 60 * 60 * 1000;
+  } else {
+    sinceTimestamp = 0;
+  }
+
+  const data = await NativeListener.getAnalyticsData(sinceTimestamp);
+
+  return {
+    totalCount: data?.totalCount ?? 0,
+    unreadCount: data?.unreadCount ?? 0,
+    dndCount: data?.dndCount ?? 0,
+    appsCount: data?.appsCount ?? 0,
+    topApps: (data?.topApps || []).map((app) => ({
+      package_name: app.package_name,
+      app_name: resolveAppName(app.package_name, app.app_name),
+      count: app.count,
+      latest_timestamp: app.latest_timestamp,
+    })),
+    hourly: data?.hourly || Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 })),
+    dayOfWeek: data?.dayOfWeek || Array.from({ length: 7 }, (_, i) => ({ day: i, count: 0 })),
+  };
+}
+

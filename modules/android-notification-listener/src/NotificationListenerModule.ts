@@ -41,6 +41,7 @@ declare class NotificationListenerNativeModule extends NativeModule<{
   setSetting(key: string, value: string): Promise<boolean>;
   deleteExpiredNotifications(retention: string): Promise<number>;
   insertNotification(item: Record<string, any>): Promise<boolean>;
+  getAnalyticsData(sinceTimestamp: number): Promise<import('./NotificationListener.types').NativeAnalyticsData>;
 }
 
 const nativeModule = requireOptionalNativeModule<NotificationListenerNativeModule>('NotificationListener');
@@ -123,6 +124,17 @@ const fallbackModule = {
   },
   async insertNotification(_item: Record<string, any>): Promise<boolean> {
     return true;
+  },
+  async getAnalyticsData(_sinceTimestamp: number): Promise<import('./NotificationListener.types').NativeAnalyticsData> {
+    return {
+      totalCount: 0,
+      unreadCount: 0,
+      dndCount: 0,
+      appsCount: 0,
+      topApps: [],
+      hourly: Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 })),
+      dayOfWeek: Array.from({ length: 7 }, (_, i) => ({ day: i, count: 0 })),
+    };
   },
   addListener(_eventName: string, _listener: any) {
     return { remove: () => {} };

@@ -57,3 +57,23 @@ export interface NativeNotificationStats {
   todayCount: number;
   appsCount: number;
 }
+
+export interface HourlyStatItem {
+  hour: number; // 0..23
+  count: number;
+}
+
+export interface DayOfWeekStatItem {
+  day: number; // 0..6 (0=Sun, 1=Mon, ..., 6=Sat)
+  count: number;
+}
+
+export interface NativeAnalyticsData {
+  totalCount: number;
+  unreadCount: number;
+  dndCount: number;
+  appsCount: number;
+  topApps: NativeAppSummary[];
+  hourly: HourlyStatItem[];
+  dayOfWeek: DayOfWeekStatItem[];
+}

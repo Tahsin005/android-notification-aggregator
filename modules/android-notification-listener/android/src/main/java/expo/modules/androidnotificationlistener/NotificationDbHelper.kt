@@ -584,4 +584,127 @@ object NotificationDbHelper {
       false
     }
   }
+
+  fun getAnalyticsData(context: Context, sinceTimestamp: Long): Map<String, Any?> {
+    val db = getDatabase(context) ?: return mapOf(
+      "totalCount" to 0,
+      "unreadCount" to 0,
+      "dndCount" to 0,
+      "appsCount" to 0,
+      "topApps" to emptyList<Map<String, Any?>>(),
+      "hourly" to (0..23).map { mapOf("hour" to it, "count" to 0) },
+      "dayOfWeek" to (0..6).map { mapOf("day" to it, "count" to 0) }
+    )
+
+    var totalCount = 0
+    var unreadCount = 0
+    var dndCount = 0
+    var appsCount = 0
+    val topApps = mutableListOf<Map<String, Any?>>()
+    val hourlyCounts = IntArray(24) { 0 }
+    val dayCounts = IntArray(7) { 0 }
+
+    val safeSince = if (sinceTimestamp > 0) sinceTimestamp.toString() else "0"
+
+    try {
+      // 1. Overall counts
+      val summarySql = """
+        SELECT 
+          COUNT(*),
+          SUM(CASE WHEN is_read = 0 THEN 1 ELSE 0 END),
+          SUM(CASE WHEN intercepted_in_dnd = 1 THEN 1 ELSE 0 END),
+          COUNT(DISTINCT package_name)
+        FROM $TABLE_NOTIFICATIONS
+        WHERE timestamp >= ?;
+      """.trimIndent()
+
+      db.rawQuery(summarySql, arrayOf(safeSince)).use { cursor ->
+        if (cursor.moveToFirst()) {
+          totalCount = cursor.getInt(0)
+          unreadCount = cursor.getInt(1)
+          dndCount = cursor.getInt(2)
+          appsCount = cursor.getInt(3)
+        }
+      }
+
+      // 2. Top Apps
+      val appsSql = """
+        SELECT
+          package_name,
+          app_name,
+          COUNT(*) as count,
+          MAX(timestamp) as latest_timestamp
+        FROM $TABLE_NOTIFICATIONS
+        WHERE timestamp >= ?
+        GROUP BY package_name, app_name
+        ORDER BY count DESC
+        LIMIT 15;
+      """.trimIndent()
+
+      db.rawQuery(appsSql, arrayOf(safeSince)).use { cursor ->
+        while (cursor.moveToNext()) {
+          topApps.add(
+            mapOf(
+              "package_name" to cursor.getString(0),
+              "app_name" to cursor.getString(1),
+              "count" to cursor.getInt(2),
+              "latest_timestamp" to cursor.getLong(3)
+            )
+          )
+        }
+      }
+
+      // 3. Hourly Distribution (0..23)
+      val hourlySql = """
+        SELECT 
+          CAST(strftime('%H', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as h,
+          COUNT(*) as cnt
+        FROM $TABLE_NOTIFICATIONS
+        WHERE timestamp >= ?
+        GROUP BY h;
+      """.trimIndent()
+
+      db.rawQuery(hourlySql, arrayOf(safeSince)).use { cursor ->
+        while (cursor.moveToNext()) {
+          val h = cursor.getInt(0)
+          val cnt = cursor.getInt(1)
+          if (h in 0..23) {
+            hourlyCounts[h] = cnt
+          }
+        }
+      }
+
+      // 4. Day of Week Distribution (0=Sun, 1=Mon, ..., 6=Sat)
+      val daySql = """
+        SELECT 
+          CAST(strftime('%w', timestamp / 1000, 'unixepoch', 'localtime') AS INTEGER) as d,
+          COUNT(*) as cnt
+        FROM $TABLE_NOTIFICATIONS
+        WHERE timestamp >= ?
+        GROUP BY d;
+      """.trimIndent()
+
+      db.rawQuery(daySql, arrayOf(safeSince)).use { cursor ->
+        while (cursor.moveToNext()) {
+          val d = cursor.getInt(0)
+          val cnt = cursor.getInt(1)
+          if (d in 0..6) {
+            dayCounts[d] = cnt
+          }
+        }
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, "Error calculating analytics data: ${e.message}", e)
+    }
+
+    return mapOf(
+      "totalCount" to totalCount,
+      "unreadCount" to unreadCount,
+      "dndCount" to dndCount,
+      "appsCount" to appsCount,
+      "topApps" to topApps,
+      "hourly" to hourlyCounts.mapIndexed { hour, count -> mapOf("hour" to hour, "count" to count) },
+      "dayOfWeek" to dayCounts.mapIndexed { day, count -> mapOf("day" to day, "count" to count) }
+    )
+  }
 }
