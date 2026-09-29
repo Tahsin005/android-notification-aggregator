@@ -2,7 +2,7 @@
   "expo": {
     "name": "Notification Aggregator",
     "slug": "android-notification-aggregator",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "androidnotificationaggregator",
@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.aggregator.androidnotificationaggregator",
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#060709",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
