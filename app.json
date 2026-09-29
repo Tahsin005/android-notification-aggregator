@@ -19,7 +19,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.QUERY_ALL_PACKAGES"]
+      "permissions": [
+        "android.permission.QUERY_ALL_PACKAGES",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "output": "static",
@@ -35,7 +39,8 @@
           "imageWidth": 96
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-local-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

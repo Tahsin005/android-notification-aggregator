@@ -21,6 +21,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { notificationEvents } from '../../services/notificationEvents';
 import { getRetentionSetting, saveRetentionSetting } from '../../services/retentionService';
 import { NotificationStats, RetentionPeriod } from '../../types/notification';
+import { useBiometrics } from '../../hooks/useBiometrics';
 
 const RETENTION_OPTIONS: { key: RetentionPeriod; label: string; description: string }[] = [
   { key: '7_days', label: '7 days', description: 'Automatically prune notifications older than a week' },
@@ -32,6 +33,16 @@ export default function SettingsScreen() {
   const { colors, isDark } = useTheme();
   const { isGranted, requestPermission } = useNotificationPermission();
   const { isDnd, dndMode, blockedPackages, toggleDnd, setDndMode } = useDnd();
+  const {
+    capabilities,
+    isLockEnabled,
+    autoLockTimeout,
+    isAuthenticating,
+    toggleLock,
+    updateTimeout,
+    lock,
+    refreshCapabilities,
+  } = useBiometrics();
 
   const [retention, setRetention] = useState<RetentionPeriod>('forever');
   const [stats, setStats] = useState<NotificationStats | null>(null);
@@ -52,8 +63,26 @@ export default function SettingsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData])
+      refreshCapabilities();
+    }, [loadData, refreshCapabilities])
   );
+
+  const handleToggleBiometrics = async (value: boolean) => {
+    if (!capabilities.canAuthenticate && value) {
+      Alert.alert(
+        'Biometrics Not Available',
+        capabilities.hasHardware
+          ? 'Please enroll a fingerprint or facial recognition in your Android device settings first.'
+          : 'This device does not have biometric hardware.'
+      );
+      return;
+    }
+
+    const success = await toggleLock(value);
+    if (!success) {
+      Alert.alert('Verification Failed', 'Identity verification is required to change this setting.');
+    }
+  };
 
   // Subscribe to live mutation events across the app
   useEffect(() => {
@@ -281,6 +310,114 @@ export default function SettingsScreen() {
           </View>
         )}
 
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textDim }]}>SECURITY & PRIVACY</Text>
+          <View
+            style={[
+              styles.card,
+              {
+                backgroundColor: colors.card,
+                borderColor: isLockEnabled ? 'rgba(250, 204, 21, 0.35)' : colors.cardBorder,
+                borderTopColor: isLockEnabled ? 'rgba(250, 204, 21, 0.60)' : colors.cardBorderTop,
+              },
+            ]}
+          >
+            <View style={styles.dndHeaderRow}>
+              <View
+                style={[
+                  styles.dndIconBox,
+                  {
+                    backgroundColor: isLockEnabled
+                      ? 'rgba(250, 204, 21, 0.16)'
+                      : 'rgba(255, 255, 255, 0.05)',
+                    borderColor: isLockEnabled
+                      ? 'rgba(250, 204, 21, 0.35)'
+                      : 'rgba(255, 255, 255, 0.10)',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={isLockEnabled ? 'shield-checkmark' : 'shield-outline'}
+                  size={22}
+                  color={isLockEnabled ? colors.primary : colors.textMuted}
+                />
+              </View>
+              <View style={styles.dndTextContainer}>
+                <Text style={[styles.statusTitle, { color: colors.text }]}>Biometric App Lock</Text>
+                <Text style={[styles.statusSubtitle, { color: colors.textMuted }]}>
+                  {capabilities.canAuthenticate
+                    ? `Protected by ${capabilities.supportedTypes.join(' / ') || 'Biometrics'} & device passcode`
+                    : capabilities.hasHardware
+                    ? 'No biometrics enrolled in Android settings'
+                    : 'Biometric hardware unavailable on device'}
+                </Text>
+              </View>
+              <Switch
+                value={isLockEnabled}
+                onValueChange={handleToggleBiometrics}
+                trackColor={{ false: 'rgba(255, 255, 255, 0.12)', true: colors.primary }}
+                thumbColor={isLockEnabled ? '#070A10' : '#888'}
+                disabled={isAuthenticating || (!capabilities.canAuthenticate && !isLockEnabled)}
+              />
+            </View>
+
+            {isLockEnabled && (
+              <View style={styles.dndSubSection}>
+                <View style={styles.dndDivider} />
+                <Text style={[styles.dndSubTitle, { color: colors.textDim }]}>AUTO-LOCK TIMEOUT</Text>
+                <View style={styles.dndModeRow}>
+                  {[
+                    { key: 0, label: 'Immediately' },
+                    { key: 60000, label: '1 Minute' },
+                    { key: 300000, label: '5 Minutes' },
+                  ].map((t) => (
+                    <TouchableOpacity
+                      key={t.key}
+                      style={[
+                        styles.dndModeBtn,
+                        autoLockTimeout === t.key && {
+                          backgroundColor: 'rgba(250, 204, 21, 0.16)',
+                          borderColor: 'rgba(250, 204, 21, 0.40)',
+                        },
+                      ]}
+                      onPress={() => updateTimeout(t.key as any)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.dndModeBtnText,
+                          {
+                            color:
+                              autoLockTimeout === t.key ? colors.primary : colors.textMuted,
+                          },
+                        ]}
+                      >
+                        {t.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.lockNowBtn,
+                    {
+                      backgroundColor: 'rgba(250, 204, 21, 0.08)',
+                      borderColor: 'rgba(250, 204, 21, 0.25)',
+                    },
+                  ]}
+                  onPress={lock}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="lock-closed" size={14} color={colors.primary} />
+                  <Text style={[styles.lockNowText, { color: colors.primary }]}>
+                    Lock Vault Now
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textDim }]}>DATA RETENTION</Text>
@@ -617,5 +754,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 8,
     fontStyle: 'italic',
+  },
+  lockNowBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  lockNowText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
